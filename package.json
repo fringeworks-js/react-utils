@@ -1,6 +1,6 @@
 {
   "name": "@niche-works/react-utils",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "keywords": [
     "react"
@@ -28,7 +28,7 @@
     "@babel/core": "^7.29.0",
     "@chromatic-com/storybook": "^5.1.2",
     "@eslint/js": "^10.0.1",
-    "@niche-works/dev": "^0.5.4",
+    "@niche-works/dev": "^0.5.5",
     "@niche-works/rollup-plugin-dist-package": "^0.2.2",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.3.5",

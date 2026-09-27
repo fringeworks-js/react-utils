@@ -1,3 +1,4 @@
+export { default as applyDefaultProps } from './applyDefaultProps';
 export { default as ensureComponent } from './ensureComponent';
 export { default as extendElement } from './extendElement';
 export { default as forEachContent } from './forEachContent';
