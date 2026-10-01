@@ -1,16 +1,22 @@
 {
   "name": "@niche-works/react-utils",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "keywords": [
     "react"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/mitsuhiroseino/niche-works-react-utils.git"
+    "url": "git+https://github.com/mitsuhiroseino/niche-works-react-utils.git"
   },
   "license": "MIT",
   "author": "Mitsuhiro Seino",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*/index.ts"
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
   "scripts": {
     "build": "tsdown",
     "build-storybook": "storybook build",
@@ -21,8 +27,8 @@
     "tidy": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\" --config ./prettier.tidy.config.ts"
   },
   "dependencies": {
-    "@niche-works/types": "^0.3.2",
-    "@niche-works/utils": "^0.4.2"
+    "@niche-works/types": "^0.4.0",
+    "@niche-works/utils": "^0.5.3"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
