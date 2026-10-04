@@ -1,13 +1,13 @@
 {
-  "name": "@niche-works/react-utils",
-  "version": "0.2.4",
+  "name": "@fringeworks/react-utils",
+  "version": "0.8.0",
   "private": true,
   "keywords": [
     "react"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mitsuhiroseino/niche-works-react-utils.git"
+    "url": "git+https://github.com/fringeworks-js/react-utils.git"
   },
   "license": "MIT",
   "author": "Mitsuhiro Seino",
@@ -27,15 +27,15 @@
     "tidy": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\" --config ./prettier.tidy.config.ts"
   },
   "dependencies": {
-    "@niche-works/types": "^0.4.0",
-    "@niche-works/utils": "^0.5.3"
+    "@fringeworks/types": "^0.8.0",
+    "@fringeworks/utils": "^0.8.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@chromatic-com/storybook": "^5.1.2",
     "@eslint/js": "^10.0.1",
-    "@niche-works/dev": "^0.5.5",
-    "@niche-works/rollup-plugin-dist-package": "^0.2.2",
+    "@fringeworks/dev": "^0.8.0",
+    "@fringeworks/rollup-plugin-dist-package": "^0.8.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.3.5",
     "@storybook/addon-docs": "^10.3.5",
@@ -81,5 +81,6 @@
     "react-dom": {
       "optional": true
     }
-  }
+  },
+  "packageManager": "pnpm@12.3.4+sha512.961aa41fb077da3a04a441d9f8e15ebc0c96da8ef710b2eb67bf9ee7cb0610eabd48f1fd85f51cffe73846785fa0f87c56a3a872a1d893f8446741b5cce45457"
 }

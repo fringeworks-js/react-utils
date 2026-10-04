@@ -1,4 +1,4 @@
-import isIterable from '@niche-works/utils/type/isIterable';
+import isIterable from '@fringeworks/utils/type/isIterable';
 import type { FragmentProps, ReactNode } from 'react';
 import { Children, Fragment, isValidElement } from 'react';
 

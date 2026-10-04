@@ -1,3 +1,3 @@
-# @niche-works/react-utils
+# @fringeworks/react-utils
 
 A niche library for React.

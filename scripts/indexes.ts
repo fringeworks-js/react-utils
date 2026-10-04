@@ -1,3 +1,3 @@
-import indexes from '@niche-works/dev/indexes';
+import indexes from '@fringeworks/dev/indexes';
 
 indexes();
