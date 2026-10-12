@@ -1,3 +1,3 @@
-import indexes from '@fringeworks/dev/indexes';
+import generateIndexFiles from '@fringeworks/dev/generateIndexFiles';
 
-indexes();
+generateIndexFiles();

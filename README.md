@@ -1,3 +1,3 @@
 # @fringeworks/react-utils
 
-A niche library for React.
+`@fringeworks/react-utils` is a library some will find handy, providing utilities for React.
