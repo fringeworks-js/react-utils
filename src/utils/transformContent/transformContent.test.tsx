@@ -18,9 +18,7 @@ describe('transformContent', () => {
         <span key="s" />
       </>,
       (node) =>
-        typeof node === 'string' || typeof node === 'number'
-          ? node
-          : node.type,
+        typeof node === 'string' || typeof node === 'number' ? node : node.type,
     );
 
     expect(result).toEqual(['text', 'span']);

@@ -110,11 +110,11 @@ importers:
   .:
     dependencies:
       '@fringeworks/types':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: link:../types
+        version: link:../types
       '@fringeworks/utils':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: link:../utils
+        version: link:../utils
     devDependencies:
       '@babel/core':
         specifier: ^7.29.0
@@ -126,8 +126,8 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.5.0(supports-color@7.2.0))
       '@fringeworks/dev':
-        specifier: ^0.9.2
-        version: 0.9.2
+        specifier: ^0.9.3
+        version: 0.9.3
       '@fringeworks/rollup-plugin-dist-package':
         specifier: ^0.8.1
         version: 0.8.1(rollup@4.62.0)
@@ -782,22 +782,13 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@fringeworks/constants@0.8.0':
-    resolution: {integrity: sha512-5p1ezW9x5pwyhMWCk6bdEri3s0F8CsIDXCh8J47n+LaXS6ULyodI0BZx7mnquV6GEgCgN5oDy0q5nknlcon4yA==}
-
-  '@fringeworks/dev@0.9.2':
-    resolution: {integrity: sha512-h+iKiPSsrTMkSZh+H+4hUEjEel6iSaACv1mWi64s5ymn1zcM5nizRv7oaQkoD6QN3iPYyaxSehz9PBtf/ZJ7UQ==}
+  '@fringeworks/dev@0.9.3':
+    resolution: {integrity: sha512-dcLp94c/IElHXUx1F+ph8JbKmwFTOy4cHyBuqgQmvWlaP6l1nQiomqJ2ac6D6WsihjN/3vLUZH81jbN3Oyswuw==}
 
   '@fringeworks/rollup-plugin-dist-package@0.8.1':
     resolution: {integrity: sha512-bowRWF5tCGGDS1oEfrkWviF3+sh+U9AGP611eM4aHYKYKWTE8EXFvoN3/uZo7fc10CTssn/U7yrMpUirAfpB3w==}
     peerDependencies:
       rollup: ^4.0.0
-
-  '@fringeworks/types@0.8.0':
-    resolution: {integrity: sha512-p4ix9hCO4ROZO+rn0CN02/0QjTcZl1/sV7CDxQWwC8IxEIZXtFqbbKrdZNWWlNexcGADZSzUZDncUF5/K75NTw==}
-
-  '@fringeworks/utils@0.8.0':
-    resolution: {integrity: sha512-jFjsTWpnIksHN/HNPJlH/06af3mMHn9g3IiogKfqC/pEgcxQTFl+B9KHK82PWej8XHbUBiPZdqB+bNayJ8G4aQ==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1981,9 +1972,6 @@ packages:
   bidi-js@1.1.0:
     resolution: {integrity: sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==}
 
-  big.js@6.2.2:
-    resolution: {integrity: sha512-y/ie+Faknx7sZA5MfGA2xKlu0GDv8RWrXGsmlteyJQ2lvoKv9GBK/fpRMc2qlSoBAgNxrixICFCBefIq8WCQpQ==}
-
   birpc@4.0.0:
     resolution: {integrity: sha512-LShSxJP0KTmd101b6DRyGBj57LZxSDYWKitQNW/mi8GRMvZb078Uf9+pveax1DrVL89vm7mWe+TovdI/UDOuPw==}
 
@@ -2513,10 +2501,6 @@ packages:
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
-
-  klona@2.0.6:
-    resolution: {integrity: sha512-dhG34DXATL5hSxJbIexCft8FChFXtmskoZYnoPWjXQuebWYCNkVeV3KkGegCK9CP1oswI/vQibS2GY7Em/sJJA==}
-    engines: {node: '>= 8'}
 
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -3765,9 +3749,7 @@ snapshots:
 
   '@exodus/bytes@1.15.1': {}
 
-  '@fringeworks/constants@0.8.0': {}
-
-  '@fringeworks/dev@0.9.2':
+  '@fringeworks/dev@0.9.3':
     dependencies:
       fast-glob: 3.3.3
       fs-extra: 11.4.1
@@ -3782,16 +3764,6 @@ snapshots:
       sort-package-json: 3.7.1
       tslib: 2.8.1
       type-fest: 5.10.0
-
-  '@fringeworks/types@0.8.0': {}
-
-  '@fringeworks/utils@0.8.0':
-    dependencies:
-      '@fringeworks/constants': 0.8.0
-      '@fringeworks/types': 0.8.0
-      big.js: 6.2.2
-      klona: 2.0.6
-      remeda: 2.50.0
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -4769,8 +4741,6 @@ snapshots:
     dependencies:
       require-from-string: 2.0.2
 
-  big.js@6.2.2: {}
-
   birpc@4.0.0: {}
 
   brace-expansion@1.1.15:
@@ -5313,8 +5283,6 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
-
-  klona@2.0.6: {}
 
   levn@0.4.1:
     dependencies:

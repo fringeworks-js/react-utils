@@ -1,5 +1,5 @@
 import type { Ref, RefCallback } from 'react';
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback } from 'react';
 import setRefCurrent from '../../utils/setRefCurrent';
 import useStableLength from '../useStableLength';
 

@@ -29,8 +29,9 @@ export type ExecutionRequest<P = void> = {
 
   /**
    * ペイロード
+   * 初期値や実行時の引数を省略した場合は undefined
    */
-  readonly payload: P;
+  readonly payload: P | undefined;
 };
 
 /**

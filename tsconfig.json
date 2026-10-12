@@ -1,39 +1,7 @@
 {
+  "extends": "@fringeworks/dev/tsconfig.base.json",
   "compilerOptions": {
-    "target": "es2023",
-    "lib": ["ES2023", "DOM"],
-    "module": "esnext",
-    "types": ["node"],
-    "skipLibCheck": true,
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "jsx": "react-jsx",
-    /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-
-    "rootDir": "src",
-    "outDir": "dist",
-    "declarationDir": "dist",
-    "typeRoots": ["./node_modules/@types"],
-    "allowJs": true,
-    "checkJs": true,
-    "declaration": true,
-    "declarationMap": false,
-    "sourceMap": false,
-    "inlineSources": false,
-    "removeComments": false,
-    "importHelpers": true,
-    "noImplicitAny": false,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strictNullChecks": false,
-    "strictPropertyInitialization": false,
-    "preserveSymlinks": false
+    "jsx": "react-jsx"
   },
   "include": ["src", "globals.d.ts"]
 }

@@ -30,22 +30,22 @@ export default function extendElement<
   }
 
   // styleのマージ
-  const style = { ...elStyle };
+  const style: Record<string, unknown> = { ...elStyle };
   if (orStyle) {
-    for (const key in orStyle) {
-      if (orStyle[key] !== undefined) {
-        style[key] = orStyle[key];
+    for (const [key, value] of Object.entries(orStyle)) {
+      if (value !== undefined) {
+        style[key] = value;
       }
     }
   }
 
   // propsのマージ
-  const props = { className, style, ...elRest } as P;
-  for (const key in orRest) {
-    if (orRest[key] !== undefined) {
-      props[key] = orRest[key];
+  const props: Record<string, unknown> = { className, style, ...elRest };
+  for (const [key, value] of Object.entries(orRest)) {
+    if (value !== undefined) {
+      props[key] = value;
     }
   }
 
-  return cloneElement(element, props, ...children);
+  return cloneElement(element, props as P, ...children);
 }

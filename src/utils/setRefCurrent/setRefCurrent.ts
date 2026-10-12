@@ -8,9 +8,9 @@ import type { RefCallback, RefObject } from 'react';
  */
 export default function setRefCurrent<T = unknown>(
   value: T | null,
-  ...refs: (RefCallback<T> | RefObject<T> | null | undefined)[]
+  ...refs: (RefCallback<T> | RefObject<T | null> | null | undefined)[]
 ): () => void {
-  const cleanups = [];
+  const cleanups: (() => void)[] = [];
   for (const ref of refs) {
     if (typeof ref === 'function') {
       const cleanup = ref(value);

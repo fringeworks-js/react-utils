@@ -2,7 +2,8 @@ import { useState } from 'react';
 import type { UsePreviousValueOptions } from './types';
 
 // 単純な比較用の関数
-const defaultIsEqual = (oldValue, newValue) => oldValue === newValue;
+const defaultIsEqual = (oldValue: unknown, newValue: unknown) =>
+  oldValue === newValue;
 
 /**
  * 前回の値を返すhook
