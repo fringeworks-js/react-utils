@@ -1,1 +1,1 @@
-export { default } from './transformElement';
+export { default, default as transformElement } from './transformElement';

@@ -1,1 +1,1 @@
-export { default } from './useCombinedRefs';
+export { default, default as useCombinedRefs } from './useCombinedRefs';

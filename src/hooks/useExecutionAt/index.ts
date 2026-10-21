@@ -1,2 +1,2 @@
 export type * from './types';
-export { default } from './useExecutionAt';
+export { default, default as useExecutionAt } from './useExecutionAt';

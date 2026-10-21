@@ -1,1 +1,1 @@
-export { default } from './useIsMounted';
+export { default, default as useIsMounted } from './useIsMounted';

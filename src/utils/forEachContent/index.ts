@@ -1,1 +1,1 @@
-export { default } from './forEachContent';
+export { default, default as forEachContent } from './forEachContent';

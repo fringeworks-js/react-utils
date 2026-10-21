@@ -1,3 +1,3 @@
-export * as hooks from './hooks';
+export * from './hooks';
 export type * from './types';
-export * as utils from './utils';
+export * from './utils';

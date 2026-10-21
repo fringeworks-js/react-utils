@@ -1,3 +1,307 @@
 # @fringeworks/react-utils
 
-`@fringeworks/react-utils` is a library some will find handy, providing utilities for React.
+`@fringeworks/react-utils` is a library some will find handy, offering hooks and functions for building React components.
+
+**[日本語のREADMEはこちら](./README.ja.md)**
+
+## Installation
+
+```bash
+npm install @fringeworks/react-utils
+# or
+pnpm add @fringeworks/react-utils
+```
+
+Supports React 18 and 19.
+
+## Usage
+
+You can import everything from the root, or import each feature from its own path.
+
+```ts
+// From the root
+import { applyDefaultProps, useLatestRef } from '@fringeworks/react-utils';
+
+// From the path of each feature
+import applyDefaultProps from '@fringeworks/react-utils/utils/applyDefaultProps';
+import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
+```
+
+## API
+
+### Hooks
+
+| Hook                                | Description                                                                   |
+| ----------------------------------- | ----------------------------------------------------------------------------- |
+| `useCombinedRefs(...refs)`          | Returns a callback ref that passes the value to all the given refs            |
+| `useConstant(factory)`              | Keeps returning the value created on the first render until unmount           |
+| `useExecutionAt(options?)`          | Returns a value for an Execution Request prop and a function that triggers it |
+| `useIsMounted()`                    | Returns a function that tells whether the component is mounted                |
+| `useLatestRef(value)`               | Returns a ref that holds the latest value                                     |
+| `usePreviousValue(value, options?)` | Returns the previous value                                                    |
+| `useStableLength(arr)`              | Ensures that the length of an array does not change across renders            |
+
+### Functions
+
+| Function                                              | Description                                                                |
+| ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| `applyDefaultProps(props, ...defaults)`               | Fills `undefined` / `null` props with default values                       |
+| `ensureComponent(component)`                          | Converts a built-in tag (such as `'div'`) into a component                 |
+| `extendElement(element, overrideProps?, ...children)` | Clones an element, merging `className` and `style`                         |
+| `forEachContent(children, callback)`                  | Iterates over elements, strings, and numbers, looking through Fragments    |
+| `forEachElement(children, callback)`                  | Iterates over elements, looking through Fragments                          |
+| `markAt()`                                            | Returns a value that increases on every call                               |
+| `setRefCurrent(value, ...refs)`                       | Sets a value to multiple refs and returns a cleanup function               |
+| `transformContent(children, callback)`                | Maps elements, strings, and numbers to an array, looking through Fragments |
+| `transformElement(children, callback)`                | Maps elements to an array, looking through Fragments                       |
+
+### `useCombinedRefs`
+
+```ts
+useCombinedRefs<T = unknown>(...refs: Ref<T>[]): RefCallback<T>
+```
+
+Returns a callback ref that sets the same value to all the given refs. Use it to pass both a ref received through `forwardRef` and a ref inside the component to a single element.
+
+- The returned function keeps the same reference as long as none of the given refs change.
+- The number of refs must not change across renders. An error is thrown if it does.
+- In React 19, the returned callback ref returns a cleanup function. It calls the cleanup functions returned by callback refs as they are, and passes `null` to the callback refs that returned none.
+
+```tsx
+const Input = forwardRef<HTMLInputElement>((props, ref) => {
+  const innerRef = useRef<HTMLInputElement>(null);
+  const combinedRef = useCombinedRefs(ref, innerRef);
+  return <input {...props} ref={combinedRef} />;
+});
+```
+
+### `useConstant`
+
+```ts
+useConstant<T>(factory: () => T): T
+```
+
+Calls `factory` on the first render and keeps returning the created value until the component unmounts.
+
+`useMemo` is a performance optimization and does not guarantee that its cache is never discarded. Use this hook for values whose identity matters, such as stateful instances.
+
+### `useExecutionAt`
+
+```ts
+useExecutionAt<P = void>(
+  options?: UseExecutionAtOptions<P>,
+): UseExecutionAtResult<P>
+```
+
+A hook for components that wrap a part with an imperative API, letting you call its methods through props. It returns a value to pass to an Execution Request prop (a prop ending with `At`, such as `undoAt`) and a function that triggers it.
+
+- `request.at` is `0` initially and increases every time `execute` is called. The receiving side runs the operation when `at` changes.
+- `execute` always keeps the same reference.
+
+```tsx
+const [undoAt, undo] = useExecutionAt<string>();
+
+<button onClick={() => undo('no-123')}>Undo</button>
+<WrappedImperativeComponent undoAt={undoAt} />
+```
+
+| Option            | Type | Description                            |
+| ----------------- | ---- | -------------------------------------- |
+| `initialPayload?` | `P`  | The initial value of `request.payload` |
+
+### `useIsMounted`
+
+```ts
+useIsMounted(): () => boolean
+```
+
+Returns a function that tells whether the component is mounted. Use it, for example, to avoid updating an unmounted component when an async task finishes.
+
+- It becomes `true` when the DOM is committed (`useLayoutEffect`), and `false` on unmount.
+- When called during rendering, it returns `false` until the first mount completes.
+- The returned function always keeps the same reference.
+
+### `useLatestRef`
+
+```ts
+useLatestRef<T>(value: T): LatestRef<T>
+```
+
+Returns a ref that holds the latest value. Since the ref is always the same object, you can read the latest value from event handlers and effects without adding it to dependency arrays.
+
+- The value is updated on commit (`useInsertionEffect`), so it is already up to date inside `useLayoutEffect` / `useEffect`.
+- Do not read it during rendering (it still holds the previous value before the commit).
+
+### `usePreviousValue`
+
+```ts
+usePreviousValue<T = unknown>(
+  value: T,
+  options?: UsePreviousValueOptions<T>,
+): T | undefined
+```
+
+Returns the previous value. It returns `initialValue` until the value changes for the first time.
+
+When the value changes, the previous value is updated by a state update during rendering (no extra commit or effect run happens). Therefore, passing a value whose comparison is always `false` (such as an object or array created during rendering) causes endless re-rendering. Pass a value with a stable reference, or specify `isEqual`.
+
+| Option          | Type                                    | Description                                                                           |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
+| `initialValue?` | `T`                                     | The value returned until the value changes for the first time                         |
+| `isEqual?`      | `(oldValue: T, newValue: T) => boolean` | A comparison that returns `true` for values considered equal. Defaults to `Object.is` |
+
+### `useStableLength`
+
+```ts
+useStableLength(arr: readonly unknown[]): void
+```
+
+Ensures that the length of an array has not changed since the first render, and throws an error if it has. Use it, for example, when using a variable-length array as a dependency array of a hook.
+
+### `applyDefaultProps`
+
+```ts
+applyDefaultProps<P extends object, const Ds extends readonly (Partial<P> | SkippedDefaults)[]>(
+  props: P,
+  ...defaults: Ds,
+): AppliedProps<P, Ds>
+```
+
+Returns a new object in which the props that are `undefined` or `null` are filled with default values that are not `undefined`. The original `props` is not modified.
+
+- You can pass multiple `defaults`. Per key, it behaves like `props[key] ?? d1[key] ?? d2[key] ?? ...`, so earlier arguments take precedence.
+- `null` / `undefined` / `false` are skipped, so you can write conditional defaults such as `isCompact && compactDefaults`.
+- In the return type, `null` / `undefined` are removed from the keys that definitely have a default value.
+- A key in `defaults` that does not exist in `props` is a type error.
+
+```ts
+const { size, color } = applyDefaultProps(
+  props,
+  isCompact && { size: 'small' },
+  { size: 'medium', color: 'primary' },
+);
+```
+
+Limitations:
+
+- Only string keys of `defaults` are applied (symbol keys are ignored).
+- When the type of `props` is a union, `defaults` can only contain keys common to all members.
+
+### `ensureComponent`
+
+```ts
+ensureComponent<C extends ElementType>(
+  component: C,
+): ComponentType<ComponentPropsWithRef<C>>
+```
+
+Converts a built-in tag (such as `'div'`) into a component that passes props and ref through as they are. A component is returned as is.
+
+- The same component is returned for the same tag.
+- Its `displayName` is `ensureComponent(tagName)`.
+
+### `extendElement`
+
+```ts
+extendElement<P extends ExtendableProps>(
+  element: ReactElement<P>,
+  overrideProps?: Partial<P>,
+  ...children: ReactNode[]
+): ReactElement<P>
+```
+
+Clones an element (`cloneElement`) with `overrideProps` applied. The `key` and `ref` of the original element are kept.
+
+| Property    | How it is applied                                                                |
+| ----------- | -------------------------------------------------------------------------------- |
+| `className` | Appended to the original `className`, separated by a space (empty is ignored)    |
+| `style`     | Overrides the original `style` per property (`undefined` is ignored)             |
+| Others      | Overrides the original value (properties whose value is `undefined` are ignored) |
+
+| Parameter        | Type              | Description                                                |
+| ---------------- | ----------------- | ---------------------------------------------------------- |
+| `element`        | `ReactElement<P>` | The element to clone                                       |
+| `overrideProps?` | `Partial<P>`      | The props to apply                                         |
+| `...children`    | `ReactNode[]`     | The children. When omitted, the original children are kept |
+
+### `forEachContent` / `forEachElement`
+
+```ts
+forEachContent(
+  children: ReactNode,
+  callback: (node: ReactElement | string | number, index: number) => void,
+): void
+forEachElement(
+  children: ReactNode,
+  callback: (node: ReactElement, index: number) => void,
+): void
+```
+
+Iterates over `children`, looking through Fragments. `forEachContent` handles elements, strings, and numbers, while `forEachElement` handles only elements. `null` / `undefined` / booleans are not handled.
+
+- Arrays and iterables are also expanded.
+- `index` is a sequential number across Fragments.
+
+### `markAt`
+
+```ts
+markAt(): MarkAtResult
+```
+
+Returns a value that increases on every call. Values start from `1` and are never duplicated. `useExecutionAt` uses it for `request.at`.
+
+### `setRefCurrent`
+
+```ts
+setRefCurrent<T = unknown>(
+  value: T | null,
+  ...refs: (RefCallback<T> | RefObject<T | null> | null | undefined)[]
+): () => void
+```
+
+Sets `current` of object refs and calls callback refs with `value`. `null` / `undefined` are ignored.
+
+Calling the returned cleanup function sets `null` to object refs. For callback refs, it calls the cleanup function they returned, or calls them with `null` if they returned none.
+
+### `transformContent` / `transformElement`
+
+```ts
+transformContent<T>(
+  children: ReactNode,
+  callback: (node: ReactElement | string | number, index: number) => T,
+): T[]
+transformElement<T>(
+  children: ReactNode,
+  callback: (node: ReactElement, index: number) => T,
+): T[]
+```
+
+Processes `children` in the same order as `forEachContent` / `forEachElement`, and returns an array of the values returned by `callback`.
+
+Unlike `Children.map`, keys are not reassigned. If different Fragments contain the same key, the key is duplicated in the returned array. When rendering the result as is, set keys inside `callback`.
+
+```tsx
+const items = transformElement(children, (element, index) => (
+  <li key={index}>{element}</li>
+));
+```
+
+### Types
+
+| Type                         | Description                                                                            |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `AppliedProps<P, Ds>`        | The return type of `applyDefaultProps`                                                 |
+| `CSSPropertiesWithVars`      | `CSSProperties` that also accepts CSS variables (`--name`)                             |
+| `ExecutionFunction<P>`       | The trigger function returned by `useExecutionAt`                                      |
+| `ExecutionRequest<P>`        | The value for an Execution Request prop returned by `useExecutionAt` (`at`, `payload`) |
+| `ExtendableProps`            | The props of an element that `extendElement` accepts (`className`, `style`)            |
+| `LatestRef<T>`               | The ref returned by `useLatestRef`                                                     |
+| `MarkAtResult`               | The return type of `markAt`                                                            |
+| `SkippedDefaults`            | Values skipped by `applyDefaultProps` (`null`, `undefined`, `false`)                   |
+| `UseExecutionAtOptions<P>`   | The options of `useExecutionAt`                                                        |
+| `UseExecutionAtResult<P>`    | The return type of `useExecutionAt`                                                    |
+| `UsePreviousValueOptions<T>` | The options of `usePreviousValue`                                                      |
+
+## License
+
+MIT

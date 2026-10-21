@@ -6,7 +6,7 @@ import { useRef } from 'react';
  * @param arr 配列
  * @throws Error
  */
-export default function useStableLength(arr: unknown[]): void {
+export default function useStableLength(arr: readonly unknown[]): void {
   const lengthRef = useRef(arr.length);
 
   // レンダリングに影響する参照ではないため、lintのエラーは無視する

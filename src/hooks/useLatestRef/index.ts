@@ -1,2 +1,2 @@
 export type * from './types';
-export { default } from './useLatestRef';
+export { default, default as useLatestRef } from './useLatestRef';

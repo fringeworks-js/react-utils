@@ -1,6 +1,6 @@
 {
   "name": "@fringeworks/react-utils",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "private": true,
   "description": "A library some will find handy, providing utilities for React.",
   "keywords": [
@@ -21,68 +21,34 @@
   "module": "./src/index.ts",
   "scripts": {
     "build": "tsdown",
-    "build-storybook": "storybook build",
+    "check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\"",
     "indexes": "tsx ./scripts/indexes.ts",
     "lint": "eslint .",
-    "storybook": "storybook dev -p 6006",
+    "release": "pnpm build && npm publish ./dist",
+    "test": "vitest",
     "tidy": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\" --config ./prettier.tidy.config.ts"
   },
-  "dependencies": {
-    "@fringeworks/types": "link:../types",
-    "@fringeworks/utils": "link:../utils"
-  },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
-    "@chromatic-com/storybook": "^5.1.2",
-    "@eslint/js": "^10.0.1",
-    "@fringeworks/dev": "^0.9.3",
-    "@fringeworks/rollup-plugin-dist-package": "^0.8.1",
-    "@rolldown/plugin-babel": "^0.2.3",
-    "@storybook/addon-a11y": "^10.3.5",
-    "@storybook/addon-docs": "^10.3.5",
-    "@storybook/addon-onboarding": "^10.3.5",
-    "@storybook/addon-vitest": "^10.3.5",
-    "@storybook/react-vite": "^10.3.5",
+    "@fringeworks/dev": "^0.13.0",
     "@testing-library/react": "^16.3.3",
-    "@types/babel__core": "^7.20.5",
-    "@types/node": "^24.12.2",
+    "@types/node": "^25.9.9",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/browser-playwright": "^4.1.5",
-    "@vitest/coverage-v8": "^4.1.8",
-    "babel-plugin-react-compiler": "^1.0.0",
-    "eslint": "^10.2.1",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "eslint-plugin-storybook": "^10.3.5",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^10.12.0",
     "fast-glob": "^3.3.3",
-    "globals": "^17.5.0",
-    "jsdom": "^30.1.0",
-    "playwright": "^1.59.1",
-    "prettier": "^3.8.3",
-    "prettier-plugin-organize-imports": "^4.3.0",
-    "prettier-plugin-packagejson": "^3.0.2",
-    "react": "^19.0.0 ",
-    "react-dom": "^19.0.0 ",
-    "rollup-plugin-copy": "^3.5.0",
-    "storybook": "^10.3.5",
-    "tsdown": "^0.22.0",
-    "tsx": "^4.21.0",
-    "typescript": "~6.0.2",
-    "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.10",
-    "vitest": "^4.1.8"
+    "jsdom": "^30.1.1",
+    "prettier": "^3.9.10",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsdown": "^0.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
   },
   "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "peerDependenciesMeta": {
-    "react-dom": {
-      "optional": true
-    }
+    "react": "^18.0.0 || ^19.0.0"
   },
   "packageManager": "pnpm@12.3.4+sha512.961aa41fb077da3a04a441d9f8e15ebc0c96da8ef710b2eb67bf9ee7cb0610eabd48f1fd85f51cffe73846785fa0f87c56a3a872a1d893f8446741b5cce45457"
 }

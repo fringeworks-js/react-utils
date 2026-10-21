@@ -1,1 +1,1 @@
-export { default } from './forEachElement';
+export { default, default as forEachElement } from './forEachElement';

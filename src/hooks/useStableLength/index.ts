@@ -1,1 +1,1 @@
-export { default } from './useStableLength';
+export { default, default as useStableLength } from './useStableLength';

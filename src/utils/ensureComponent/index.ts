@@ -1,1 +1,1 @@
-export { default } from './ensureComponent';
+export { default, default as ensureComponent } from './ensureComponent';

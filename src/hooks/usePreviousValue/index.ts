@@ -1,2 +1,2 @@
 export type * from './types';
-export { default } from './usePreviousValue';
+export { default, default as usePreviousValue } from './usePreviousValue';

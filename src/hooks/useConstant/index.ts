@@ -1,1 +1,1 @@
-export { default } from './useConstant';
+export { default, default as useConstant } from './useConstant';

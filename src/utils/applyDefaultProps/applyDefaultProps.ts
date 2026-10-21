@@ -30,6 +30,10 @@ type CheckKeys<P, T> = T extends SkippedDefaults
  *
  *   applyDefaultProps(props, isCompact && compactDefaults, baseDefaults)
  *
+ * 制限事項
+ * - defaults のキーは文字列のもののみ反映する（symbol のキーは無視する）
+ * - props の型がユニオン型の場合、defaults に書けるのはすべての型に共通するキーのみ
+ *
  * @param props    コンポーネントに渡された props
  * @param defaults props の一部のプロパティにデフォルト値を設定したオブジェクト
  *                 （複数可、先の引数ほど優先。null / undefined / false はスキップ）
@@ -42,8 +46,7 @@ export default function applyDefaultProps<
 
   // 単一の defaults 用のルールを、左の defaults から順に適用する
   for (const values of defaults as readonly (
-    | Record<string, unknown>
-    | SkippedDefaults
+    Record<string, unknown> | SkippedDefaults
   )[]) {
     if (!values) {
       continue;

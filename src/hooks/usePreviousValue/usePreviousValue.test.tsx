@@ -40,9 +40,7 @@ describe('usePreviousValue', () => {
   });
 
   it('isEqualで「変化なし」と判定された間は前回値が更新されない', () => {
-    const isEqual = (oldValue?: number, newValue?: number) =>
-      oldValue != null &&
-      newValue != null &&
+    const isEqual = (oldValue: number, newValue: number) =>
       Math.floor(oldValue) === Math.floor(newValue);
 
     const { result, rerender } = renderHook(
@@ -58,6 +56,30 @@ describe('usePreviousValue', () => {
     // 整数部が変わったので更新される(前回値は最後に確定していた1.1)
     rerender({ value: 2.1 });
     expect(result.current).toBe(1.1);
+  });
+
+  it('NaNを渡しても再レンダリングが止まる', () => {
+    const { result, rerender } = renderHook(
+      ({ value }: { value: number }) => usePreviousValue(value),
+      { initialProps: { value: NaN } },
+    );
+    expect(result.current).toBeUndefined();
+
+    rerender({ value: NaN });
+    expect(result.current).toBeUndefined();
+
+    rerender({ value: 1 });
+    expect(result.current).toBeNaN();
+  });
+
+  it('値が変わらなければ、マウント時に余分なレンダリングをしない', () => {
+    let renderCount = 0;
+    renderHook(() => {
+      renderCount += 1;
+      return usePreviousValue('a', { initialValue: 'init' });
+    });
+
+    expect(renderCount).toBe(1);
   });
 
   it('値が変化してもコミット回数は外部からのレンダー要求の回数と一致する', () => {

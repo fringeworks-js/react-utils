@@ -1,51 +1,52 @@
-import type { HTMLAttributes, ReactElement, ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { cloneElement } from 'react';
+import type { ExtendableProps } from './types';
 
 /**
- * classNameとstyleはマージ、それ以外のプロパティはpropsの値で上書きしてcloneElementを実行する
+ * classNameとstyleはマージ、それ以外のプロパティはoverridePropsの値で上書きしてcloneElementを実行する
+ *
+ * - className: 元のclassNameの後ろに空白区切りで追加する（空文字は無視する）
+ * - style: 元のstyleにプロパティ単位で上書きする（値がundefinedのプロパティは無視する）
+ * - それ以外: overridePropsの値で上書きする（値がundefinedのプロパティは無視する）
+ *
  * @param element エレメント
  * @param overrideProps 新しいエレメントのプロパティをオーバーライドするプロパティ
- * @param children 子要素
- * @returns
+ * @param children 子要素。省略した場合は元の子要素を引き継ぐ
+ * @returns 新しいエレメント
  */
-export default function extendElement<
-  P extends HTMLAttributes<T>,
-  T extends HTMLElement,
->(
+export default function extendElement<P extends ExtendableProps>(
   element: ReactElement<P>,
-  overrideProps?: P,
+  overrideProps?: Partial<P>,
   ...children: ReactNode[]
 ): ReactElement<P> {
-  const { className: elClassName, style: elStyle, ...elRest } = element.props;
-  const {
-    className: orClassName,
-    style: orStyle,
-    ...orRest
-  } = overrideProps || {};
+  const { className, style, ...rest } = overrideProps ?? {};
+  // cloneElementは元のpropsを引き継ぐため、変更するプロパティだけを渡す
+  const props: Record<string, unknown> = {};
 
-  // classNameのマージ
-  let className = elClassName;
-  if (orClassName != null) {
-    className = className ? `${className} ${orClassName}` : orClassName;
-  }
-
-  // styleのマージ
-  const style: Record<string, unknown> = { ...elStyle };
-  if (orStyle) {
-    for (const [key, value] of Object.entries(orStyle)) {
-      if (value !== undefined) {
-        style[key] = value;
-      }
-    }
-  }
-
-  // propsのマージ
-  const props: Record<string, unknown> = { className, style, ...elRest };
-  for (const [key, value] of Object.entries(orRest)) {
+  for (const [key, value] of Object.entries(rest)) {
     if (value !== undefined) {
       props[key] = value;
     }
   }
 
-  return cloneElement(element, props as P, ...children);
+  // classNameのマージ
+  if (className) {
+    const baseClassName = element.props.className;
+    props.className = baseClassName
+      ? `${baseClassName} ${className}`
+      : className;
+  }
+
+  // styleのマージ
+  if (style) {
+    const mergedStyle: Record<string, unknown> = { ...element.props.style };
+    for (const [key, value] of Object.entries(style)) {
+      if (value !== undefined) {
+        mergedStyle[key] = value;
+      }
+    }
+    props.style = mergedStyle;
+  }
+
+  return cloneElement(element, props as Partial<P>, ...children);
 }

@@ -1,1 +1,1 @@
-export { default } from './transformContent';
+export { default, default as transformContent } from './transformContent';
