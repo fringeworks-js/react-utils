@@ -1,6 +1,6 @@
 {
   "name": "@fringeworks/react-utils",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "private": true,
   "description": "A library some will find handy, providing utilities for React.",
   "keywords": [
@@ -25,19 +25,19 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\"",
     "indexes": "tsx ./scripts/indexes.ts",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "release": "pnpm build && npm publish ./dist",
     "test": "vitest",
     "tidy": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\" --config ./prettier.tidy.config.ts"
   },
   "devDependencies": {
-    "@fringeworks/dev": "^0.13.0",
+    "@fringeworks/dev": "^0.13.1",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^25.9.9",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.12.0",
-    "fast-glob": "^3.3.3",
     "jsdom": "^30.1.1",
     "prettier": "^3.9.10",
     "react": "^19.0.0",

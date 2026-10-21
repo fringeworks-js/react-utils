@@ -110,8 +110,8 @@ importers:
   .:
     devDependencies:
       '@fringeworks/dev':
-        specifier: ^0.13.0
-        version: 0.13.0(eslint@10.12.0(supports-color@7.2.0))(prettier@3.9.10)(rollup@4.62.0)(supports-color@7.2.0)(tsdown@0.23.1(oxc-resolver@11.20.0)(tsx@4.23.15)(typescript@6.0.3))(typescript@6.0.3)
+        specifier: ^0.13.1
+        version: 0.13.1(eslint@10.12.0(supports-color@7.2.0))(prettier@3.9.10)(rollup@4.62.0)(supports-color@7.2.0)(tsdown@0.23.1(oxc-resolver@11.20.0)(tsx@4.23.15)(typescript@6.0.3))(typescript@6.0.3)
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -130,9 +130,6 @@ importers:
       eslint:
         specifier: ^10.12.0
         version: 10.12.0(supports-color@7.2.0)
-      fast-glob:
-        specifier: ^3.3.3
-        version: 3.3.3
       jsdom:
         specifier: ^30.1.1
         version: 30.1.2
@@ -514,8 +511,8 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@fringeworks/dev@0.13.0':
-    resolution: {integrity: sha512-Sx+3kozvCEPW1tB5kFazJ2pmAvUP6x9Su+Q82rRYoCDAFkfJI/pkaB6u0D7glLis8uJx7ARahEbt3GGxxh1rzw==}
+  '@fringeworks/dev@0.13.1':
+    resolution: {integrity: sha512-DBofYsRxKLpNbhoTVhiyKgA68ZCHfLu5TqCbF2C+9EqU/amyAHTlJW0Md+d7sMc1SEh31vLqK2MmAMuyNdR2Fg==}
     peerDependencies:
       eslint: ^10.0.0
       prettier: ^3.0.0
@@ -2786,7 +2783,7 @@ snapshots:
 
   '@exodus/bytes@1.16.0': {}
 
-  '@fringeworks/dev@0.13.0(eslint@10.12.0(supports-color@7.2.0))(prettier@3.9.10)(rollup@4.62.0)(supports-color@7.2.0)(tsdown@0.23.1(oxc-resolver@11.20.0)(tsx@4.23.15)(typescript@6.0.3))(typescript@6.0.3)':
+  '@fringeworks/dev@0.13.1(eslint@10.12.0(supports-color@7.2.0))(prettier@3.9.10)(rollup@4.62.0)(supports-color@7.2.0)(tsdown@0.23.1(oxc-resolver@11.20.0)(tsx@4.23.15)(typescript@6.0.3))(typescript@6.0.3)':
     dependencies:
       '@eslint/js': 10.0.1(eslint@10.12.0(supports-color@7.2.0))
       '@fringeworks/rollup-plugin-dist-package': 0.9.1(rollup@4.62.0)
@@ -4400,7 +4397,7 @@ snapshots:
   vite@8.0.16(@types/node@25.9.9)(esbuild@0.28.1)(sass@1.101.0)(tsx@4.23.15):
     dependencies:
       lightningcss: 1.32.0
-      picomatch: 4.0.4
+      picomatch: 4.0.7
       postcss: 8.5.15
       rolldown: 1.0.3
       tinyglobby: 0.2.17
