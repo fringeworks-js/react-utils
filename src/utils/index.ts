@@ -3,6 +3,7 @@ export * from './ensureComponent';
 export * from './extendElement';
 export * from './forEachContent';
 export * from './forEachElement';
+export * from './getComponentName';
 export * from './markAt';
 export * from './setRefCurrent';
 export * from './transformContent';

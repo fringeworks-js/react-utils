@@ -1,6 +1,6 @@
 {
   "name": "@fringeworks/react-utils",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "private": true,
   "description": "A library some will find handy, providing utilities for React.",
   "keywords": [

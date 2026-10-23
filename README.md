@@ -50,6 +50,7 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `extendElement(element, overrideProps?, ...children)` | Clones an element, merging `className` and `style`                         |
 | `forEachContent(children, callback)`                  | Iterates over elements, strings, and numbers, looking through Fragments    |
 | `forEachElement(children, callback)`                  | Iterates over elements, looking through Fragments                          |
+| `getComponentName(Component)`                         | Returns the name of a component, for use in an HOC's `displayName`         |
 | `markAt()`                                            | Returns a value that increases on every call                               |
 | `setRefCurrent(value, ...refs)`                       | Sets a value to multiple refs and returns a cleanup function               |
 | `transformContent(children, callback)`                | Maps elements, strings, and numbers to an array, looking through Fragments |
@@ -241,6 +242,18 @@ Iterates over `children`, looking through Fragments. `forEachContent` handles el
 
 - Arrays and iterables are also expanded.
 - `index` is a sequential number across Fragments.
+
+### `getComponentName`
+
+```ts
+getComponentName(Component: ElementType): string
+```
+
+Returns the name of a component, for use in an HOC's `displayName` and the like.
+
+- A built-in tag (such as `'div'`) is returned as is.
+- `displayName` takes precedence over the function name.
+- Returns `Unknown` when neither is available (or both are empty).
 
 ### `markAt`
 

@@ -50,6 +50,7 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `extendElement(element, overrideProps?, ...children)` | `className` と `style` をマージしてエレメントを複製する            |
 | `forEachContent(children, callback)`                  | Fragment を透過し、エレメント・文字列・数値を順に処理する          |
 | `forEachElement(children, callback)`                  | Fragment を透過し、エレメントを順に処理する                        |
+| `getComponentName(Component)`                         | HOC の `displayName` などに使う、コンポーネントの名前を返す        |
 | `markAt()`                                            | 呼び出すたびに増加する値を返す                                     |
 | `setRefCurrent(value, ...refs)`                       | 複数の ref に値を設定し、クリーンアップ関数を返す                  |
 | `transformContent(children, callback)`                | Fragment を透過し、エレメント・文字列・数値を変換した配列を返す    |
@@ -241,6 +242,18 @@ Fragment を透過して `children` を順に処理します。`forEachContent` 
 
 - 配列や iterable も展開します。
 - `index` は、Fragment をまたいだ連番です。
+
+### `getComponentName`
+
+```ts
+getComponentName(Component: ElementType): string
+```
+
+HOC の `displayName` などに使う、コンポーネントの名前を返します。
+
+- 組み込みタグ（`'div'` など）はそのまま返します。
+- `displayName` を関数名より優先します。
+- どちらも無い（空文字の）場合は `Unknown` を返します。
 
 ### `markAt`
 
