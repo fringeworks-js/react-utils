@@ -31,15 +31,20 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 
 ### hook
 
-| hook                                | 説明                                                                   |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| `useCombinedRefs(...refs)`          | 複数の ref にまとめて値を渡す callback ref を返す                      |
-| `useConstant(factory)`              | 初回のレンダリングで作った値を、アンマウントされるまで返し続ける       |
-| `useExecutionAt(options?)`          | Execution Request プロパティに渡す値と、実行のきっかけになる関数を返す |
-| `useIsMounted()`                    | マウントされているかどうかを判定する関数を返す                         |
-| `useLatestRef(value)`               | 最新の値を保持する参照を返す                                           |
-| `usePreviousValue(value, options?)` | 前回の値を返す                                                         |
-| `useStableLength(arr)`              | 配列の要素数がレンダリングをまたいで変わらないことを確認する           |
+| hook                                          | 説明                                                                   |
+| --------------------------------------------- | ---------------------------------------------------------------------- |
+| `useCombinedRefs(...refs)`                    | 複数の ref にまとめて値を渡す callback ref を返す                      |
+| `useConstant(factory)`                        | 初回のレンダリングで作った値を、アンマウントされるまで返し続ける       |
+| `useExecutionAt(options?)`                    | Execution Request プロパティに渡す値と、実行のきっかけになる関数を返す |
+| `useExecutionEffect(request, callback)`       | Execution Request プロパティで要求されたときに、処理を実行する         |
+| `useExecutionLayoutEffect(request, callback)` | `useExecutionEffect` の、画面に表示する前に実行する版                  |
+| `useIsHydrated()`                             | ハイドレーションが終わっているかを返す                                 |
+| `useIsMounted()`                              | マウントされているかどうかを判定する関数を返す                         |
+| `useLatestRef(value)`                         | 最新の値を保持する参照を返す                                           |
+| `usePreviousValue(value, options?)`           | 前回の値を返す                                                         |
+| `useRerender()`                               | 再レンダリングだけを起こす関数を返す                                   |
+| `useStableCallback(callback)`                 | 参照が変わらず、最新のコールバックを呼ぶ関数を返す                     |
+| `useStableLength(arr)`                        | 配列の要素数がレンダリングをまたいで変わらないことを確認する           |
 
 ### 関数
 
@@ -96,7 +101,7 @@ useExecutionAt<P = void>(
 
 命令的な API を持つ部品をラップしたコンポーネントで、プロパティを通じてそのメソッドを実行するための hook です。Execution Request プロパティ（`undoAt` のように `At` で終わるプロパティ）に渡す値と、実行のきっかけになる関数を返します。
 
-- `request.at` は初期状態では `0` で、`execute` を呼ぶたびに増加します。受け取る側は `at` が変わったら処理を実行します。
+- `request.at` は初期状態では `0` で、`execute` を呼ぶたびに増加します。受け取る側は `useExecutionEffect` / `useExecutionLayoutEffect` で処理を実行します。
 - `execute` の参照は常に同じです。
 
 ```tsx
@@ -109,6 +114,69 @@ const [undoAt, undo] = useExecutionAt<string>();
 | オプション        | 型  | 説明                              |
 | ----------------- | --- | --------------------------------- |
 | `initialPayload?` | `P` | 初期状態の `request.payload` の値 |
+
+### `useExecutionEffect`
+
+```ts
+useExecutionEffect<P = void>(
+  request: ExecutionRequest<P> | undefined,
+  callback: (payload: P | undefined) => void,
+): void
+```
+
+`useExecutionAt` と対になる、受け取る側の hook です。Execution Request プロパティで要求されたときに、要求の `payload` を渡して `callback` を実行します。処理は画面に表示した後（`useEffect`）に実行します。
+
+- `request.at` が変わったときだけ実行します。`payload` は比べません。
+- マウントより前に出た要求は実行しません。マウントしたときにすでに渡されていた要求も実行しません。
+- 次のレンダリングまでに複数回要求した場合は、最後の要求だけを実行します。
+- `callback` は最新のものを呼びます。`callback` の参照が変わっても実行しません。
+- `request` が `undefined` の場合は、要求なしとして扱います。省略できるプロパティをそのまま渡せます。
+
+```tsx
+type Props = { undoAt?: ExecutionRequest<string> };
+
+function WrappedImperativeComponent({ undoAt }: Props) {
+  const instance = useConstant(() => createImperativeComponent());
+  useExecutionEffect(undoAt, (payload) => {
+    instance.undo(payload);
+  });
+  // ...
+}
+```
+
+| 引数       | 型                                  | 説明                                        |
+| ---------- | ----------------------------------- | ------------------------------------------- |
+| `request`  | `ExecutionRequest<P> \| undefined`  | 受け取った Execution Request プロパティの値 |
+| `callback` | `(payload: P \| undefined) => void` | 要求されたときに実行する処理                |
+
+### `useExecutionLayoutEffect`
+
+```ts
+useExecutionLayoutEffect<P = void>(
+  request: ExecutionRequest<P> | undefined,
+  callback: (payload: P | undefined) => void,
+): void
+```
+
+`useExecutionEffect` の、処理を画面に表示する前（`useLayoutEffect`）に実行する版です。スクロールの位置を合わせる、計測し直すなど、結果を画面に表示する前に反映したい処理に使います。要求の扱いと引数は `useExecutionEffect` と同じです。
+
+### `useIsHydrated`
+
+```ts
+useIsHydrated(): boolean
+```
+
+ハイドレーションが終わっているかを返します。クライアントにしか無い値（`window`・`localStorage`・画面の幅など）を、ハイドレーションの不一致を起こさずに描画するために使います。
+
+- サーバーの描画とハイドレーション中は `false`、その後は `true` を返します。
+- ハイドレーションの後にマウントしたコンポーネントや、クライアントだけで描画した場合は、最初から `true` を返します。
+- `typeof window` による判定と違い、クライアントでもハイドレーション中は `false` になります。そのため、サーバーの HTML と食い違いません。
+
+```tsx
+const isHydrated = useIsHydrated();
+
+<p>{isHydrated ? navigator.userAgent : ''}</p>;
+```
 
 ### `useIsMounted`
 
@@ -150,6 +218,38 @@ usePreviousValue<T = unknown>(
 | --------------- | --------------------------------------- | ---------------------------------------------------------------------- |
 | `initialValue?` | `T`                                     | 値が一度も変わっていない間に返す値                                     |
 | `isEqual?`      | `(oldValue: T, newValue: T) => boolean` | 同じ値とみなす場合に `true` を返す比較関数。未指定の場合は `Object.is` |
+
+### `useRerender`
+
+```ts
+useRerender(): () => void
+```
+
+再レンダリングだけを起こす関数を返します。値を持たずに描画し直したい場合（外部の状態を読み直して表示するときなど）に使います。
+
+- 返す関数の参照は常に同じです。
+
+### `useStableCallback`
+
+```ts
+useStableCallback<A extends unknown[], R>(
+  callback: (...args: A) => R,
+): (...args: A) => R
+```
+
+参照が変わらず、呼ぶと最新の `callback` を実行する関数を返します。子のコンポーネントに渡すイベントハンドラーの参照を変えずに、中身は常に最新にする場合に使います。
+
+- 返す関数の参照は常に同じです。
+- 最新の `callback` はコミット時に反映されます。レンダリング中には呼ばないでください（古い `callback` が呼ばれます）。イベントハンドラーやエフェクトの中から呼びます。
+- React 19.2 の `useEffectEvent` はエフェクトの中から呼ぶ専用ですが、この hook が返す関数は子のコンポーネントにも渡せます。
+
+```tsx
+const handleSelect = useStableCallback((id: string) => {
+  onSelect(id, filter);
+});
+
+<MemoizedList onSelect={handleSelect} />;
+```
 
 ### `useStableLength`
 

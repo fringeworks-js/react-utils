@@ -31,15 +31,20 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 
 ### Hooks
 
-| Hook                                | Description                                                                   |
-| ----------------------------------- | ----------------------------------------------------------------------------- |
-| `useCombinedRefs(...refs)`          | Returns a callback ref that passes the value to all the given refs            |
-| `useConstant(factory)`              | Keeps returning the value created on the first render until unmount           |
-| `useExecutionAt(options?)`          | Returns a value for an Execution Request prop and a function that triggers it |
-| `useIsMounted()`                    | Returns a function that tells whether the component is mounted                |
-| `useLatestRef(value)`               | Returns a ref that holds the latest value                                     |
-| `usePreviousValue(value, options?)` | Returns the previous value                                                    |
-| `useStableLength(arr)`              | Ensures that the length of an array does not change across renders            |
+| Hook                                          | Description                                                                   |
+| --------------------------------------------- | ----------------------------------------------------------------------------- |
+| `useCombinedRefs(...refs)`                    | Returns a callback ref that passes the value to all the given refs            |
+| `useConstant(factory)`                        | Keeps returning the value created on the first render until unmount           |
+| `useExecutionAt(options?)`                    | Returns a value for an Execution Request prop and a function that triggers it |
+| `useExecutionEffect(request, callback)`       | Runs an operation when it is requested through an Execution Request prop      |
+| `useExecutionLayoutEffect(request, callback)` | A version of `useExecutionEffect` that runs before the browser paints         |
+| `useIsHydrated()`                             | Returns whether hydration has finished                                        |
+| `useIsMounted()`                              | Returns a function that tells whether the component is mounted                |
+| `useLatestRef(value)`                         | Returns a ref that holds the latest value                                     |
+| `usePreviousValue(value, options?)`           | Returns the previous value                                                    |
+| `useRerender()`                               | Returns a function that only triggers a re-render                             |
+| `useStableCallback(callback)`                 | Returns a function with a stable reference that calls the latest callback     |
+| `useStableLength(arr)`                        | Ensures that the length of an array does not change across renders            |
 
 ### Functions
 
@@ -96,7 +101,7 @@ useExecutionAt<P = void>(
 
 A hook for components that wrap a part with an imperative API, letting you call its methods through props. It returns a value to pass to an Execution Request prop (a prop ending with `At`, such as `undoAt`) and a function that triggers it.
 
-- `request.at` is `0` initially and increases every time `execute` is called. The receiving side runs the operation when `at` changes.
+- `request.at` is `0` initially and increases every time `execute` is called. The receiving side runs the operation with `useExecutionEffect` / `useExecutionLayoutEffect`.
 - `execute` always keeps the same reference.
 
 ```tsx
@@ -109,6 +114,69 @@ const [undoAt, undo] = useExecutionAt<string>();
 | Option            | Type | Description                            |
 | ----------------- | ---- | -------------------------------------- |
 | `initialPayload?` | `P`  | The initial value of `request.payload` |
+
+### `useExecutionEffect`
+
+```ts
+useExecutionEffect<P = void>(
+  request: ExecutionRequest<P> | undefined,
+  callback: (payload: P | undefined) => void,
+): void
+```
+
+The receiving counterpart of `useExecutionAt`. When an operation is requested through an Execution Request prop, it runs `callback` with the request's `payload`. The operation runs after the browser paints (`useEffect`).
+
+- It runs only when `request.at` changes. `payload` is not compared.
+- Requests made before mount are not run, including a request that was already passed at mount.
+- If multiple requests are made before the next render, only the last one is run.
+- The latest `callback` is called. Changing the reference of `callback` does not run it.
+- An `undefined` `request` is treated as no request, so an optional prop can be passed as is.
+
+```tsx
+type Props = { undoAt?: ExecutionRequest<string> };
+
+function WrappedImperativeComponent({ undoAt }: Props) {
+  const instance = useConstant(() => createImperativeComponent());
+  useExecutionEffect(undoAt, (payload) => {
+    instance.undo(payload);
+  });
+  // ...
+}
+```
+
+| Parameter  | Type                                | Description                                      |
+| ---------- | ----------------------------------- | ------------------------------------------------ |
+| `request`  | `ExecutionRequest<P> \| undefined`  | The value of the received Execution Request prop |
+| `callback` | `(payload: P \| undefined) => void` | The operation to run when requested              |
+
+### `useExecutionLayoutEffect`
+
+```ts
+useExecutionLayoutEffect<P = void>(
+  request: ExecutionRequest<P> | undefined,
+  callback: (payload: P | undefined) => void,
+): void
+```
+
+A version of `useExecutionEffect` that runs the operation before the browser paints (`useLayoutEffect`). Use it for operations whose result should be reflected before painting, such as adjusting the scroll position or measuring again. Requests and parameters are handled the same way as `useExecutionEffect`.
+
+### `useIsHydrated`
+
+```ts
+useIsHydrated(): boolean
+```
+
+Returns whether hydration has finished. Use it to render client-only values (`window`, `localStorage`, the viewport width, and so on) without causing a hydration mismatch.
+
+- Returns `false` during server rendering and hydration, and `true` afterwards.
+- Returns `true` from the start in components mounted after hydration and in client-only rendering.
+- Unlike checking `typeof window`, it returns `false` during hydration even on the client, so the output matches the server HTML.
+
+```tsx
+const isHydrated = useIsHydrated();
+
+<p>{isHydrated ? navigator.userAgent : ''}</p>;
+```
 
 ### `useIsMounted`
 
@@ -150,6 +218,38 @@ When the value changes, the previous value is updated by a state update during r
 | --------------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
 | `initialValue?` | `T`                                     | The value returned until the value changes for the first time                         |
 | `isEqual?`      | `(oldValue: T, newValue: T) => boolean` | A comparison that returns `true` for values considered equal. Defaults to `Object.is` |
+
+### `useRerender`
+
+```ts
+useRerender(): () => void
+```
+
+Returns a function that only triggers a re-render. Use it when you want to render again without holding a value (for example, to show external state after reading it again).
+
+- The returned function always keeps the same reference.
+
+### `useStableCallback`
+
+```ts
+useStableCallback<A extends unknown[], R>(
+  callback: (...args: A) => R,
+): (...args: A) => R
+```
+
+Returns a function whose reference never changes and that calls the latest `callback`. Use it to keep the reference of an event handler passed to child components while always running the latest logic.
+
+- The returned function always keeps the same reference.
+- The latest `callback` is applied on commit. Do not call the function during rendering (the previous `callback` would be called). Call it from event handlers or effects.
+- React 19.2's `useEffectEvent` can only be called from effects, while the function returned by this hook can also be passed to child components.
+
+```tsx
+const handleSelect = useStableCallback((id: string) => {
+  onSelect(id, filter);
+});
+
+<MemoizedList onSelect={handleSelect} />;
+```
 
 ### `useStableLength`
 
