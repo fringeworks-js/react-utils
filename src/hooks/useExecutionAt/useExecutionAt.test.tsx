@@ -3,14 +3,12 @@ import { describe, expect, it } from 'vitest';
 import useExecutionAt from './useExecutionAt';
 
 describe('useExecutionAt', () => {
-  it('初期状態はat:0、指定したinitialPayloadを持つ', () => {
-    const { result } = renderHook(() =>
-      useExecutionAt<string>({ initialPayload: 'init' }),
-    );
+  it('初期状態はat:0、payloadはundefined', () => {
+    const { result } = renderHook(() => useExecutionAt<string>());
     const [request] = result.current;
 
     expect(request.at).toBe(0);
-    expect(request.payload).toBe('init');
+    expect(request.payload).toBeUndefined();
   });
 
   it('executeを呼ぶ度にatが増加し、payloadが更新される', () => {

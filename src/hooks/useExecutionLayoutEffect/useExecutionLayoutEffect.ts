@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react';
 import useExecutionHandler from '../../_internal/_useExecutionHandler';
+import type { ExecutionMark } from '../../types';
 import type { ExecutionRequest } from '../useExecutionAt';
-import type { ExecutionMark } from '../useExecutionMark';
 
 /**
  * Execution Request プロパティ（xxxAt）を受け取り、要求があったときに画面に表示する前に処理を実行するフック

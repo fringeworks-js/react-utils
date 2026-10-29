@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import type { ExecutionRequest } from '../hooks/useExecutionAt';
-import type { ExecutionMark } from '../hooks/useExecutionMark';
 import useLatestRef from '../hooks/useLatestRef';
+import type { ExecutionMark } from '../types';
 
 /**
  * 受け取った要求の印（`at`、または ExecutionMark の値）を返す

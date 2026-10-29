@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
+import type { ExecutionMark } from '../../types';
 import markAt from '../../utils/markAt';
-import type { ExecutionMark, UseExecutionMarkResult } from './types';
+import type { UseExecutionMarkResult } from './types';
 
 /**
  * payload の無い Execution Request（実行の印）と、要求する関数を返すフック

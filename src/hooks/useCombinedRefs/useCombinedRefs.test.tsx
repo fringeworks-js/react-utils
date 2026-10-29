@@ -42,6 +42,19 @@ describe('useCombinedRefs', () => {
     expect(callbackRef).toHaveBeenCalledWith(null);
   });
 
+  it('null・undefinedのrefは無視する', () => {
+    const objectRef = createRef<string>();
+
+    const { result } = renderHook(() =>
+      useCombinedRefs(objectRef, null, undefined),
+    );
+    const cleanup = result.current('value') as () => void;
+
+    expect(objectRef.current).toBe('value');
+    cleanup();
+    expect(objectRef.current).toBeNull();
+  });
+
   it('再レンダーを跨いでも渡すrefの参照が変わらなければ同一の関数を返す', () => {
     const objectRef = createRef<string>();
     const { result, rerender } = renderHook(() => useCombinedRefs(objectRef));

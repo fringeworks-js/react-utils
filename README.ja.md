@@ -37,7 +37,7 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `useChangeLayoutEffect(dependencies, callback)` | `useChangeEffect` の、画面に表示する前に実行する版                       |
 | `useCombinedRefs(...refs)`                      | 複数の ref にまとめて値を渡す callback ref を返す                        |
 | `useConstant(factory)`                          | 初回のレンダリングで作った値を、アンマウントされるまで返し続ける         |
-| `useExecutionAt(options?)`                      | Execution Request プロパティに渡す値と、実行のきっかけになる関数を返す   |
+| `useExecutionAt()`                              | Execution Request プロパティに渡す値と、実行のきっかけになる関数を返す   |
 | `useExecutionEffect(request, callback)`         | Execution Request プロパティで要求されたときに、処理を実行する           |
 | `useExecutionLayoutEffect(request, callback)`   | `useExecutionEffect` の、画面に表示する前に実行する版                    |
 | `useExecutionMark()`                            | payload の無い Execution Request と、要求する関数を返す                  |
@@ -120,12 +120,15 @@ useChangeLayoutEffect(
 ### `useCombinedRefs`
 
 ```ts
-useCombinedRefs<T = unknown>(...refs: Ref<T>[]): RefCallback<T>
+useCombinedRefs<T = unknown>(
+  ...refs: (Ref<T> | undefined)[]
+): RefCallback<T>
 ```
 
 渡したすべての ref に同じ値を設定する callback ref を返します。`forwardRef` で受け取った ref と、コンポーネント内の ref を1つのエレメントに渡したい場合に使います。
 
 - 返す関数の参照は、渡す ref がすべて変わらない限り変わりません。
+- `null`・`undefined` の ref は無視します。省略できる `ref` のプロパティをそのまま渡せます。
 - 渡す ref の数は、レンダリングをまたいで変えられません。変わった場合はエラーになります。
 - React 19 では、返す callback ref がクリーンアップ関数を返します。callback ref が返したクリーンアップ関数はそのまま呼び、返さなかった callback ref には `null` を渡します。
 
@@ -150,9 +153,7 @@ useConstant<T>(factory: () => T): T
 ### `useExecutionAt`
 
 ```ts
-useExecutionAt<P = void>(
-  options?: UseExecutionAtOptions<P>,
-): UseExecutionAtResult<P>
+useExecutionAt<P = void>(): UseExecutionAtResult<P>
 ```
 
 命令的な API を持つ部品をラップしたコンポーネントで、プロパティを通じてそのメソッドを実行するための hook です。Execution Request プロパティ（`undoAt` のように `At` で終わるプロパティ）に渡す値と、実行のきっかけになる関数を返します。
@@ -166,10 +167,6 @@ const [undoAt, undo] = useExecutionAt<string>();
 <button onClick={() => undo('no-123')}>Undo</button>
 <WrappedImperativeComponent undoAt={undoAt} />
 ```
-
-| オプション        | 型  | 説明                              |
-| ----------------- | --- | --------------------------------- |
-| `initialPayload?` | `P` | 初期状態の `request.payload` の値 |
 
 ### `useExecutionEffect`
 
@@ -435,7 +432,7 @@ HOC の `displayName` などに使う、コンポーネントの名前を返し�
 ### `markAt`
 
 ```ts
-markAt(): MarkAtResult
+markAt(): ExecutionMark
 ```
 
 呼び出すたびに増加する値を返します。値は `1` から始まり、重複しません。`useExecutionAt` の `request.at` と、`useExecutionMark` の値に使っています。
@@ -478,22 +475,20 @@ const items = transformElement(children, (element, index) => (
 
 ### 型
 
-| 型                           | 説明                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------- |
-| `AppliedProps<P, Ds>`        | `applyDefaultProps` の戻り値の型                                                 |
-| `ChangeDependencies`         | `xxxOn` のプロパティに渡す依存の値（1段目のプロパティを `Object.is` で比べる）   |
-| `CSSPropertiesWithVars`      | CSS 変数（`--name`）を書ける `CSSProperties`                                     |
-| `ExecutionFunction<P>`       | `useExecutionAt` が返す、実行のきっかけになる関数                                |
-| `ExecutionRequest<P>`        | `useExecutionAt` が返す、Execution Request プロパティに渡す値（`at`・`payload`） |
-| `ExtendableProps`            | `extendElement` に渡せるエレメントの props（`className`・`style`）               |
-| `LatestRef<T>`               | `useLatestRef` が返す参照                                                        |
-| `ExecutionMark`              | payload の無い Execution Request（実体は数値。要求のたびに異なる値にする）       |
-| `MarkAtResult`               | `markAt` の戻り値の型                                                            |
-| `SkippedDefaults`            | `applyDefaultProps` でスキップされる値（`null`・`undefined`・`false`）           |
-| `UseExecutionAtOptions<P>`   | `useExecutionAt` のオプション                                                    |
-| `UseExecutionAtResult<P>`    | `useExecutionAt` の戻り値の型                                                    |
-| `UseExecutionMarkResult`     | `useExecutionMark` の戻り値の型                                                  |
-| `UsePreviousValueOptions<T>` | `usePreviousValue` のオプション                                                  |
+| 型                           | 説明                                                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AppliedProps<P, Ds>`        | `applyDefaultProps` の戻り値の型                                                                                                             |
+| `ChangeDependencies`         | `xxxOn` のプロパティに渡す依存の値（1段目のプロパティを `Object.is` で比べる）                                                               |
+| `CSSPropertiesWithVars`      | CSS 変数（`--name`）を書ける `CSSProperties`                                                                                                 |
+| `ExecutionFunction<P>`       | `useExecutionAt` が返す、実行のきっかけになる関数                                                                                            |
+| `ExecutionRequest<P>`        | `useExecutionAt` が返す、Execution Request プロパティに渡す値（`at`・`payload`）                                                             |
+| `ExtendableProps`            | `extendElement` に渡せるエレメントの props（`className`・`style`）                                                                           |
+| `LatestRef<T>`               | `useLatestRef` が返す参照                                                                                                                    |
+| `ExecutionMark`              | 実行の印。payload の無い Execution Request で、`markAt` の戻り値と `ExecutionRequest` の `at` の型（実体は数値。要求のたびに異なる値にする） |
+| `SkippedDefaults`            | `applyDefaultProps` でスキップされる値（`null`・`undefined`・`false`）                                                                       |
+| `UseExecutionAtResult<P>`    | `useExecutionAt` の戻り値の型                                                                                                                |
+| `UseExecutionMarkResult`     | `useExecutionMark` の戻り値の型                                                                                                              |
+| `UsePreviousValueOptions<T>` | `usePreviousValue` のオプション                                                                                                              |
 
 ## ライセンス
 

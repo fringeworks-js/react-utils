@@ -3,7 +3,6 @@ import markAt from '../../utils/markAt';
 import type {
   ExecutionFunction,
   ExecutionRequest,
-  UseExecutionAtOptions,
   UseExecutionAtResult,
 } from './types';
 
@@ -14,7 +13,6 @@ import type {
  * プロパティを通じて命令的コンポーネントのメソッドを実行する仕組みを提供する。
  *
  * @template P 実行時にExecution Requestプロパティに渡すペイロードの型
- * @param options オプション
  * @returns [request, execute]
  * - `request`: 現在のリクエスト
  * - `execute`: 新しいリクエストを発行する関数
@@ -26,14 +24,12 @@ import type {
  * // 3. 処理を実行するコンポーネント
  * <WrappedImperativeComponent undoAt={undoAt} />
  */
-export default function useExecutionAt<P = void>(
-  options: UseExecutionAtOptions<P> = {},
-): UseExecutionAtResult<P> {
+export default function useExecutionAt<P = void>(): UseExecutionAtResult<P> {
   // 実行時の状態を表す値
   const [executionRequest, setExecutionRequest] = useState<ExecutionRequest<P>>(
     {
       at: 0,
-      payload: options.initialPayload,
+      payload: undefined,
     },
   );
   // 処理実行用関数

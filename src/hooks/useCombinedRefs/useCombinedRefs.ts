@@ -5,11 +5,13 @@ import useStableLength from '../useStableLength';
 
 /**
  * 複数のrefに纏めて値を渡すことができるRefCallbackを取得する
+ *
+ * null・undefined のrefは無視する（省略できる `ref` のプロパティをそのまま渡せる）
  * @param refs
  * @returns
  */
 export default function useCombinedRefs<T = unknown>(
-  ...refs: Ref<T>[]
+  ...refs: (Ref<T> | undefined)[]
 ): RefCallback<T> {
   // 配列数に変更がないことを保証する
   useStableLength(refs);

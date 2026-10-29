@@ -1,14 +1,4 @@
-import type { MarkAtResult } from '../../utils/markAt';
-
-/**
- * オプション
- */
-export type UseExecutionAtOptions<P = void> = {
-  /**
-   * ペイロードの初期値
-   */
-  initialPayload?: P;
-};
+import type { ExecutionMark } from '../../types';
 
 /**
  * 戻り値
@@ -25,7 +15,7 @@ export type ExecutionRequest<P = void> = {
   /**
    * 実行される度に増加する値
    */
-  readonly at: MarkAtResult;
+  readonly at: ExecutionMark;
 
   /**
    * ペイロード
