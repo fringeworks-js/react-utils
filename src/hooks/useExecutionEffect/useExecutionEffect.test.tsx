@@ -1,9 +1,11 @@
 import { act, render, renderHook } from '@testing-library/react';
 import { StrictMode, useLayoutEffect, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import markAt from '../../utils/markAt';
 import type { ExecutionRequest } from '../useExecutionAt';
 import useExecutionAt from '../useExecutionAt';
 import useExecutionLayoutEffect from '../useExecutionLayoutEffect';
+import useExecutionMark from '../useExecutionMark';
 import useExecutionEffect from './useExecutionEffect';
 
 type Hook = typeof useExecutionEffect;
@@ -207,5 +209,94 @@ describe('実行のタイミング', () => {
     });
 
     expect(order).toEqual(['layout', 'other layout', 'effect']);
+  });
+});
+
+describe.each([
+  ['useExecutionEffect', useExecutionEffect],
+  ['useExecutionLayoutEffect', useExecutionLayoutEffect],
+] as const)('%s（ExecutionMark）', (_, useHook) => {
+  type MarkProps = {
+    mark: number | undefined;
+    callback: (payload: unknown) => void;
+  };
+  const renderWith = (initialProps: MarkProps) =>
+    renderHook(
+      ({ mark, callback }: MarkProps) => {
+        useHook(mark, callback);
+      },
+      { initialProps },
+    );
+
+  it('useExecutionMark の値が変わるたびに、payload を undefined にして実行する', () => {
+    const callback = vi.fn();
+    const { result } = renderHook(() => {
+      const [focusAt, focus] = useExecutionMark();
+      useHook(focusAt, callback);
+      return focus;
+    });
+
+    expect(callback).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current();
+    });
+    act(() => {
+      result.current();
+    });
+
+    expect(callback.mock.calls).toEqual([[undefined], [undefined]]);
+  });
+
+  it('markAt で作った値でなくても、値が変わるたびに実行する（カウンター、時刻など）', () => {
+    const callback = vi.fn();
+    const { rerender } = renderWith({ mark: 0, callback });
+
+    rerender({ mark: 1, callback });
+    rerender({ mark: 2, callback });
+    rerender({ mark: 1_700_000_000_000, callback });
+
+    expect(callback).toHaveBeenCalledTimes(3);
+  });
+
+  it('同じ値を続けて渡しても、2回目は実行しない', () => {
+    const callback = vi.fn();
+    const { rerender } = renderWith({ mark: 0, callback });
+
+    rerender({ mark: 5, callback });
+    rerender({ mark: 5, callback });
+
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('マウントしたときに渡されていた値では実行しない', () => {
+    const callback = vi.fn();
+    const { rerender } = renderWith({ mark: 5, callback });
+
+    rerender({ mark: 5, callback });
+    expect(callback).not.toHaveBeenCalled();
+
+    rerender({ mark: 6, callback });
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('0（まだ要求していない）と undefined では実行しない', () => {
+    const callback = vi.fn();
+    const { rerender } = renderWith({ mark: 3, callback });
+
+    rerender({ mark: 0, callback });
+    rerender({ mark: undefined, callback });
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it('マウントの後に undefined から値に変わったら、その値がいつ作られたものでも実行する', () => {
+    const before = markAt();
+    const callback = vi.fn();
+    const { rerender } = renderWith({ mark: undefined, callback });
+
+    rerender({ mark: before, callback });
+
+    expect(callback).toHaveBeenCalledTimes(1);
   });
 });

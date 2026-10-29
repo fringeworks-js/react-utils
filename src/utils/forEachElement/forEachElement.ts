@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { isValidElement } from 'react';
-import _traverseChildren from '../../_helpers/_traverseChildren';
+import _traverseChildren from '../../_internal/_traverseChildren';
 
 /**
  * React.Fragmentを透過し、children内のReactElementを処理する

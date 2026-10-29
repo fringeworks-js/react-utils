@@ -31,20 +31,23 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 
 ### hook
 
-| hook                                          | 説明                                                                   |
-| --------------------------------------------- | ---------------------------------------------------------------------- |
-| `useCombinedRefs(...refs)`                    | 複数の ref にまとめて値を渡す callback ref を返す                      |
-| `useConstant(factory)`                        | 初回のレンダリングで作った値を、アンマウントされるまで返し続ける       |
-| `useExecutionAt(options?)`                    | Execution Request プロパティに渡す値と、実行のきっかけになる関数を返す |
-| `useExecutionEffect(request, callback)`       | Execution Request プロパティで要求されたときに、処理を実行する         |
-| `useExecutionLayoutEffect(request, callback)` | `useExecutionEffect` の、画面に表示する前に実行する版                  |
-| `useIsHydrated()`                             | ハイドレーションが終わっているかを返す                                 |
-| `useIsMounted()`                              | マウントされているかどうかを判定する関数を返す                         |
-| `useLatestRef(value)`                         | 最新の値を保持する参照を返す                                           |
-| `usePreviousValue(value, options?)`           | 前回の値を返す                                                         |
-| `useRerender()`                               | 再レンダリングだけを起こす関数を返す                                   |
-| `useStableCallback(callback)`                 | 参照が変わらず、最新のコールバックを呼ぶ関数を返す                     |
-| `useStableLength(arr)`                        | 配列の要素数がレンダリングをまたいで変わらないことを確認する           |
+| hook                                            | 説明                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------ |
+| `useChangeEffect(dependencies, callback)`       | `xxxOn` のプロパティで受け取った依存の値が変わったときに、処理を実行する |
+| `useChangeLayoutEffect(dependencies, callback)` | `useChangeEffect` の、画面に表示する前に実行する版                       |
+| `useCombinedRefs(...refs)`                      | 複数の ref にまとめて値を渡す callback ref を返す                        |
+| `useConstant(factory)`                          | 初回のレンダリングで作った値を、アンマウントされるまで返し続ける         |
+| `useExecutionAt(options?)`                      | Execution Request プロパティに渡す値と、実行のきっかけになる関数を返す   |
+| `useExecutionEffect(request, callback)`         | Execution Request プロパティで要求されたときに、処理を実行する           |
+| `useExecutionLayoutEffect(request, callback)`   | `useExecutionEffect` の、画面に表示する前に実行する版                    |
+| `useExecutionMark()`                            | payload の無い Execution Request と、要求する関数を返す                  |
+| `useIsHydrated()`                               | ハイドレーションが終わっているかを返す                                   |
+| `useIsMounted()`                                | マウントされているかどうかを判定する関数を返す                           |
+| `useLatestRef(value)`                           | 最新の値を保持する参照を返す                                             |
+| `usePreviousValue(value, options?)`             | 前回の値を返す                                                           |
+| `useRerender()`                                 | 再レンダリングだけを起こす関数を返す                                     |
+| `useStableCallback(callback)`                   | 参照が変わらず、最新のコールバックを呼ぶ関数を返す                       |
+| `useStableLength(arr)`                          | 配列の要素数がレンダリングをまたいで変わらないことを確認する             |
 
 ### 関数
 
@@ -60,6 +63,59 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `setRefCurrent(value, ...refs)`                       | 複数の ref に値を設定し、クリーンアップ関数を返す                  |
 | `transformContent(children, callback)`                | Fragment を透過し、エレメント・文字列・数値を変換した配列を返す    |
 | `transformElement(children, callback)`                | Fragment を透過し、エレメントを変換した配列を返す                  |
+
+### `useChangeEffect`
+
+```ts
+useChangeEffect(
+  dependencies: ChangeDependencies | undefined,
+  callback: () => void,
+): void
+```
+
+`xxxOn` のプロパティ（例: `refreshOn`）を受け取る側の hook です。受け取った依存の値（Change Dependencies）が変わったときに、`callback` を実行します。処理は画面に表示した後（`useEffect`）に実行します。
+
+測り直しや再計算など、結果が入力だけで決まる操作を、利用者が渡した値の変化に合わせて実行するために使います。回数や payload に意味がある命令は、Execution Request（`useExecutionAt`・`useExecutionEffect`）を使います。
+
+- 1段目のプロパティを `Object.is` で比べ、どれかが変わったときに実行します。プロパティが増えた・減った場合も変化とみなします。
+- 比べるのは1段目だけです。プロパティの値がオブジェクトの場合は参照で比べるため、その場で作ったオブジェクト（`{ style }` など）を入れると、毎回変化とみなします。
+- 依存の値そのものは、その場で書いたオブジェクトを渡してかまいません。
+- 初回（マウントしたとき）は実行しません。
+- `dependencies` が `undefined` の場合は、プロパティの無いオブジェクトとして扱います。省略できるプロパティをそのまま渡せます。
+- `callback` は最新のものを呼びます。`callback` の参照が変わっても実行しません。
+- Execution Request（`useExecutionAt` の値）をプロパティに入れると、要求のたびに実行します。
+
+```tsx
+// 渡す側
+<WrappedComponent refreshOn={{ className, theme }} />;
+
+// 受け取る側
+type Props = { refreshOn?: ChangeDependencies };
+
+function WrappedComponent({ refreshOn }: Props) {
+  const instance = useConstant(() => createInstance());
+  useChangeEffect(refreshOn, () => {
+    instance.refresh();
+  });
+  // ...
+}
+```
+
+| 引数           | 型                                | 説明                                 |
+| -------------- | --------------------------------- | ------------------------------------ |
+| `dependencies` | `ChangeDependencies \| undefined` | 受け取った依存の値                   |
+| `callback`     | `() => void`                      | 依存の値が変わったときに実行する処理 |
+
+### `useChangeLayoutEffect`
+
+```ts
+useChangeLayoutEffect(
+  dependencies: ChangeDependencies | undefined,
+  callback: () => void,
+): void
+```
+
+`useChangeEffect` の、処理を画面に表示する前（`useLayoutEffect`）に実行する版です。測り直しなど、結果を画面に表示する前に反映したい処理に使います。依存の値の扱いと引数は `useChangeEffect` と同じです。
 
 ### `useCombinedRefs`
 
@@ -101,7 +157,7 @@ useExecutionAt<P = void>(
 
 命令的な API を持つ部品をラップしたコンポーネントで、プロパティを通じてそのメソッドを実行するための hook です。Execution Request プロパティ（`undoAt` のように `At` で終わるプロパティ）に渡す値と、実行のきっかけになる関数を返します。
 
-- `request.at` は初期状態では `0` で、`execute` を呼ぶたびに増加します。受け取る側は `useExecutionEffect` / `useExecutionLayoutEffect` で処理を実行します。
+- `request.at` は初期状態では `0` で、`execute` を呼ぶたびに増加します。受け取る側は `useExecutionEffect` / `useExecutionLayoutEffect` で処理を実行します。payload が要らない場合は `useExecutionMark` を使います。
 - `execute` の参照は常に同じです。
 
 ```tsx
@@ -119,15 +175,17 @@ const [undoAt, undo] = useExecutionAt<string>();
 
 ```ts
 useExecutionEffect<P = void>(
-  request: ExecutionRequest<P> | undefined,
+  request: ExecutionRequest<P> | ExecutionMark | undefined,
   callback: (payload: P | undefined) => void,
 ): void
 ```
 
-`useExecutionAt` と対になる、受け取る側の hook です。Execution Request プロパティで要求されたときに、要求の `payload` を渡して `callback` を実行します。処理は画面に表示した後（`useEffect`）に実行します。
+`useExecutionAt`・`useExecutionMark` と対になる、受け取る側の hook です。Execution Request プロパティで要求されたときに、要求の `payload` を渡して `callback` を実行します。処理は画面に表示した後（`useEffect`）に実行します。
 
-- `request.at` が変わったときだけ実行します。`payload` は比べません。
-- マウントより前に出た要求は実行しません。マウントしたときにすでに渡されていた要求も実行しません。
+- 印（`request.at`、または `ExecutionMark` の値）が変わったときだけ実行します。`payload` は比べません。
+- マウントしたときに渡されていた要求は実行しません（マウントしたときの印を基準にします）。
+- 印が `0`（まだ要求していない）の場合は実行しません。
+- `ExecutionMark` を受け取った場合、`callback` の `payload` は `undefined` です。印は `markAt()` で作ったものでなくてもかまいません（要求のたびに異なる値であればよい）。
 - 次のレンダリングまでに複数回要求した場合は、最後の要求だけを実行します。
 - `callback` は最新のものを呼びます。`callback` の参照が変わっても実行しません。
 - `request` が `undefined` の場合は、要求なしとして扱います。省略できるプロパティをそのまま渡せます。
@@ -153,12 +211,31 @@ function WrappedImperativeComponent({ undoAt }: Props) {
 
 ```ts
 useExecutionLayoutEffect<P = void>(
-  request: ExecutionRequest<P> | undefined,
+  request: ExecutionRequest<P> | ExecutionMark | undefined,
   callback: (payload: P | undefined) => void,
 ): void
 ```
 
 `useExecutionEffect` の、処理を画面に表示する前（`useLayoutEffect`）に実行する版です。スクロールの位置を合わせる、計測し直すなど、結果を画面に表示する前に反映したい処理に使います。要求の扱いと引数は `useExecutionEffect` と同じです。
+
+### `useExecutionMark`
+
+```ts
+useExecutionMark(): UseExecutionMarkResult
+```
+
+`useExecutionAt` の payload を持たない版です。payload の無い Execution Request（`ExecutionMark`。実体は数値）と、要求する関数を返します。命令的な部品の `focus()`・`reset()` のような、引数の要らないメソッドをプロパティから実行する場合に使います。
+
+- 値は初期状態では `0`（まだ要求していない）で、`execute` を呼ぶたびに `markAt()` で作った新しい値になります。
+- `execute` の参照は常に同じです。
+- この hook を使わずに、`ExecutionMark` を自分で作ってもかまいません（ストアや設定に置いた値など）。その場合は、**要求のたびに前回と異なる値にしてください**。同じ値を続けて渡すと、2回目は要求とみなしません。`markAt()` を使うと、呼ぶたびに異なる値になります。
+
+```tsx
+const [focusAt, focus] = useExecutionMark();
+
+<button onClick={focus}>Focus</button>
+<WrappedImperativeComponent focusAt={focusAt} />
+```
 
 ### `useIsHydrated`
 
@@ -361,7 +438,7 @@ HOC の `displayName` などに使う、コンポーネントの名前を返し�
 markAt(): MarkAtResult
 ```
 
-呼び出すたびに増加する値を返します。値は `1` から始まり、重複しません。`useExecutionAt` で `request.at` に使っています。
+呼び出すたびに増加する値を返します。値は `1` から始まり、重複しません。`useExecutionAt` の `request.at` と、`useExecutionMark` の値に使っています。
 
 ### `setRefCurrent`
 
@@ -404,15 +481,18 @@ const items = transformElement(children, (element, index) => (
 | 型                           | 説明                                                                             |
 | ---------------------------- | -------------------------------------------------------------------------------- |
 | `AppliedProps<P, Ds>`        | `applyDefaultProps` の戻り値の型                                                 |
+| `ChangeDependencies`         | `xxxOn` のプロパティに渡す依存の値（1段目のプロパティを `Object.is` で比べる）   |
 | `CSSPropertiesWithVars`      | CSS 変数（`--name`）を書ける `CSSProperties`                                     |
 | `ExecutionFunction<P>`       | `useExecutionAt` が返す、実行のきっかけになる関数                                |
 | `ExecutionRequest<P>`        | `useExecutionAt` が返す、Execution Request プロパティに渡す値（`at`・`payload`） |
 | `ExtendableProps`            | `extendElement` に渡せるエレメントの props（`className`・`style`）               |
 | `LatestRef<T>`               | `useLatestRef` が返す参照                                                        |
+| `ExecutionMark`              | payload の無い Execution Request（実体は数値。要求のたびに異なる値にする）       |
 | `MarkAtResult`               | `markAt` の戻り値の型                                                            |
 | `SkippedDefaults`            | `applyDefaultProps` でスキップされる値（`null`・`undefined`・`false`）           |
 | `UseExecutionAtOptions<P>`   | `useExecutionAt` のオプション                                                    |
 | `UseExecutionAtResult<P>`    | `useExecutionAt` の戻り値の型                                                    |
+| `UseExecutionMarkResult`     | `useExecutionMark` の戻り値の型                                                  |
 | `UsePreviousValueOptions<T>` | `usePreviousValue` のオプション                                                  |
 
 ## ライセンス

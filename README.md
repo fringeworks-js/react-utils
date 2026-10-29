@@ -31,20 +31,23 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 
 ### Hooks
 
-| Hook                                          | Description                                                                   |
-| --------------------------------------------- | ----------------------------------------------------------------------------- |
-| `useCombinedRefs(...refs)`                    | Returns a callback ref that passes the value to all the given refs            |
-| `useConstant(factory)`                        | Keeps returning the value created on the first render until unmount           |
-| `useExecutionAt(options?)`                    | Returns a value for an Execution Request prop and a function that triggers it |
-| `useExecutionEffect(request, callback)`       | Runs an operation when it is requested through an Execution Request prop      |
-| `useExecutionLayoutEffect(request, callback)` | A version of `useExecutionEffect` that runs before the browser paints         |
-| `useIsHydrated()`                             | Returns whether hydration has finished                                        |
-| `useIsMounted()`                              | Returns a function that tells whether the component is mounted                |
-| `useLatestRef(value)`                         | Returns a ref that holds the latest value                                     |
-| `usePreviousValue(value, options?)`           | Returns the previous value                                                    |
-| `useRerender()`                               | Returns a function that only triggers a re-render                             |
-| `useStableCallback(callback)`                 | Returns a function with a stable reference that calls the latest callback     |
-| `useStableLength(arr)`                        | Ensures that the length of an array does not change across renders            |
+| Hook                                            | Description                                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `useChangeEffect(dependencies, callback)`       | Runs an operation when the dependency values received through an `xxxOn` prop change |
+| `useChangeLayoutEffect(dependencies, callback)` | A version of `useChangeEffect` that runs before the browser paints                   |
+| `useCombinedRefs(...refs)`                      | Returns a callback ref that passes the value to all the given refs                   |
+| `useConstant(factory)`                          | Keeps returning the value created on the first render until unmount                  |
+| `useExecutionAt(options?)`                      | Returns a value for an Execution Request prop and a function that triggers it        |
+| `useExecutionEffect(request, callback)`         | Runs an operation when it is requested through an Execution Request prop             |
+| `useExecutionLayoutEffect(request, callback)`   | A version of `useExecutionEffect` that runs before the browser paints                |
+| `useExecutionMark()`                            | Returns an Execution Request without a payload and a function that makes a request   |
+| `useIsHydrated()`                               | Returns whether hydration has finished                                               |
+| `useIsMounted()`                                | Returns a function that tells whether the component is mounted                       |
+| `useLatestRef(value)`                           | Returns a ref that holds the latest value                                            |
+| `usePreviousValue(value, options?)`             | Returns the previous value                                                           |
+| `useRerender()`                                 | Returns a function that only triggers a re-render                                    |
+| `useStableCallback(callback)`                   | Returns a function with a stable reference that calls the latest callback            |
+| `useStableLength(arr)`                          | Ensures that the length of an array does not change across renders                   |
 
 ### Functions
 
@@ -60,6 +63,59 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `setRefCurrent(value, ...refs)`                       | Sets a value to multiple refs and returns a cleanup function               |
 | `transformContent(children, callback)`                | Maps elements, strings, and numbers to an array, looking through Fragments |
 | `transformElement(children, callback)`                | Maps elements to an array, looking through Fragments                       |
+
+### `useChangeEffect`
+
+```ts
+useChangeEffect(
+  dependencies: ChangeDependencies | undefined,
+  callback: () => void,
+): void
+```
+
+The receiving hook for `xxxOn` props (such as `refreshOn`). It runs `callback` when the received dependency values (Change Dependencies) change. The operation runs after the browser paints (`useEffect`).
+
+Use it to run operations whose result depends only on their inputs, such as measuring or recalculating again, when the values passed by the user change. For commands where the count or the payload matters, use Execution Requests (`useExecutionAt`, `useExecutionEffect`).
+
+- It compares the first-level properties with `Object.is` and runs when any of them changes. Added or removed properties also count as a change.
+- Only the first level is compared. Object values are compared by reference, so putting an object created during rendering (such as `{ style }`) counts as a change every time.
+- The dependency object itself may be written inline.
+- It does not run on the first commit (mount).
+- An `undefined` `dependencies` is treated as an object with no properties, so an optional prop can be passed as is.
+- The latest `callback` is called. Changing the reference of `callback` does not run it.
+- Putting an Execution Request (the value of `useExecutionAt`) in a property runs the operation on every request.
+
+```tsx
+// Passing side
+<WrappedComponent refreshOn={{ className, theme }} />;
+
+// Receiving side
+type Props = { refreshOn?: ChangeDependencies };
+
+function WrappedComponent({ refreshOn }: Props) {
+  const instance = useConstant(() => createInstance());
+  useChangeEffect(refreshOn, () => {
+    instance.refresh();
+  });
+  // ...
+}
+```
+
+| Parameter      | Type                              | Description                                            |
+| -------------- | --------------------------------- | ------------------------------------------------------ |
+| `dependencies` | `ChangeDependencies \| undefined` | The received dependency values                         |
+| `callback`     | `() => void`                      | The operation to run when the dependency values change |
+
+### `useChangeLayoutEffect`
+
+```ts
+useChangeLayoutEffect(
+  dependencies: ChangeDependencies | undefined,
+  callback: () => void,
+): void
+```
+
+A version of `useChangeEffect` that runs the operation before the browser paints (`useLayoutEffect`). Use it for operations whose result should be reflected before painting, such as measuring again. Dependency values and parameters are handled the same way as `useChangeEffect`.
 
 ### `useCombinedRefs`
 
@@ -101,7 +157,7 @@ useExecutionAt<P = void>(
 
 A hook for components that wrap a part with an imperative API, letting you call its methods through props. It returns a value to pass to an Execution Request prop (a prop ending with `At`, such as `undoAt`) and a function that triggers it.
 
-- `request.at` is `0` initially and increases every time `execute` is called. The receiving side runs the operation with `useExecutionEffect` / `useExecutionLayoutEffect`.
+- `request.at` is `0` initially and increases every time `execute` is called. The receiving side runs the operation with `useExecutionEffect` / `useExecutionLayoutEffect`. Use `useExecutionMark` when no payload is needed.
 - `execute` always keeps the same reference.
 
 ```tsx
@@ -119,15 +175,17 @@ const [undoAt, undo] = useExecutionAt<string>();
 
 ```ts
 useExecutionEffect<P = void>(
-  request: ExecutionRequest<P> | undefined,
+  request: ExecutionRequest<P> | ExecutionMark | undefined,
   callback: (payload: P | undefined) => void,
 ): void
 ```
 
-The receiving counterpart of `useExecutionAt`. When an operation is requested through an Execution Request prop, it runs `callback` with the request's `payload`. The operation runs after the browser paints (`useEffect`).
+The receiving counterpart of `useExecutionAt` and `useExecutionMark`. When an operation is requested through an Execution Request prop, it runs `callback` with the request's `payload`. The operation runs after the browser paints (`useEffect`).
 
-- It runs only when `request.at` changes. `payload` is not compared.
-- Requests made before mount are not run, including a request that was already passed at mount.
+- It runs only when the mark (`request.at`, or the value of an `ExecutionMark`) changes. `payload` is not compared.
+- A request that was already passed at mount is not run (the mark at mount is the baseline).
+- It does not run when the mark is `0` (not requested yet).
+- When it receives an `ExecutionMark`, the `payload` passed to `callback` is `undefined`. The mark does not have to be created by `markAt()` (any value that differs on every request works).
 - If multiple requests are made before the next render, only the last one is run.
 - The latest `callback` is called. Changing the reference of `callback` does not run it.
 - An `undefined` `request` is treated as no request, so an optional prop can be passed as is.
@@ -153,12 +211,31 @@ function WrappedImperativeComponent({ undoAt }: Props) {
 
 ```ts
 useExecutionLayoutEffect<P = void>(
-  request: ExecutionRequest<P> | undefined,
+  request: ExecutionRequest<P> | ExecutionMark | undefined,
   callback: (payload: P | undefined) => void,
 ): void
 ```
 
 A version of `useExecutionEffect` that runs the operation before the browser paints (`useLayoutEffect`). Use it for operations whose result should be reflected before painting, such as adjusting the scroll position or measuring again. Requests and parameters are handled the same way as `useExecutionEffect`.
+
+### `useExecutionMark`
+
+```ts
+useExecutionMark(): UseExecutionMarkResult
+```
+
+A version of `useExecutionAt` without a payload. It returns an Execution Request without a payload (`ExecutionMark`, which is a number) and a function that makes a request. Use it to run methods that take no arguments, such as `focus()` or `reset()` of an imperative part, through props.
+
+- The value is `0` (not requested yet) initially, and becomes a new value created by `markAt()` every time `execute` is called.
+- `execute` always keeps the same reference.
+- You may create an `ExecutionMark` yourself without this hook (for example, a value in a store or configuration). In that case, **make it different from the previous value on every request**. Passing the same value again is not treated as a new request. `markAt()` returns a different value on every call.
+
+```tsx
+const [focusAt, focus] = useExecutionMark();
+
+<button onClick={focus}>Focus</button>
+<WrappedImperativeComponent focusAt={focusAt} />
+```
 
 ### `useIsHydrated`
 
@@ -361,7 +438,7 @@ Returns the name of a component, for use in an HOC's `displayName` and the like.
 markAt(): MarkAtResult
 ```
 
-Returns a value that increases on every call. Values start from `1` and are never duplicated. `useExecutionAt` uses it for `request.at`.
+Returns a value that increases on every call. Values start from `1` and are never duplicated. `useExecutionAt` uses it for `request.at`, and `useExecutionMark` uses it for its value.
 
 ### `setRefCurrent`
 
@@ -401,19 +478,22 @@ const items = transformElement(children, (element, index) => (
 
 ### Types
 
-| Type                         | Description                                                                            |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| `AppliedProps<P, Ds>`        | The return type of `applyDefaultProps`                                                 |
-| `CSSPropertiesWithVars`      | `CSSProperties` that also accepts CSS variables (`--name`)                             |
-| `ExecutionFunction<P>`       | The trigger function returned by `useExecutionAt`                                      |
-| `ExecutionRequest<P>`        | The value for an Execution Request prop returned by `useExecutionAt` (`at`, `payload`) |
-| `ExtendableProps`            | The props of an element that `extendElement` accepts (`className`, `style`)            |
-| `LatestRef<T>`               | The ref returned by `useLatestRef`                                                     |
-| `MarkAtResult`               | The return type of `markAt`                                                            |
-| `SkippedDefaults`            | Values skipped by `applyDefaultProps` (`null`, `undefined`, `false`)                   |
-| `UseExecutionAtOptions<P>`   | The options of `useExecutionAt`                                                        |
-| `UseExecutionAtResult<P>`    | The return type of `useExecutionAt`                                                    |
-| `UsePreviousValueOptions<T>` | The options of `usePreviousValue`                                                      |
+| Type                         | Description                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `AppliedProps<P, Ds>`        | The return type of `applyDefaultProps`                                                                 |
+| `ChangeDependencies`         | The dependency values passed to an `xxxOn` prop (first-level properties are compared with `Object.is`) |
+| `CSSPropertiesWithVars`      | `CSSProperties` that also accepts CSS variables (`--name`)                                             |
+| `ExecutionFunction<P>`       | The trigger function returned by `useExecutionAt`                                                      |
+| `ExecutionRequest<P>`        | The value for an Execution Request prop returned by `useExecutionAt` (`at`, `payload`)                 |
+| `ExtendableProps`            | The props of an element that `extendElement` accepts (`className`, `style`)                            |
+| `LatestRef<T>`               | The ref returned by `useLatestRef`                                                                     |
+| `ExecutionMark`              | An Execution Request without a payload (a number; make it different on every request)                  |
+| `MarkAtResult`               | The return type of `markAt`                                                                            |
+| `SkippedDefaults`            | Values skipped by `applyDefaultProps` (`null`, `undefined`, `false`)                                   |
+| `UseExecutionAtOptions<P>`   | The options of `useExecutionAt`                                                                        |
+| `UseExecutionAtResult<P>`    | The return type of `useExecutionAt`                                                                    |
+| `UseExecutionMarkResult`     | The return type of `useExecutionMark`                                                                  |
+| `UsePreviousValueOptions<T>` | The options of `usePreviousValue`                                                                      |
 
 ## License
 

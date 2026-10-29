@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import _traverseChildren, {
   _isContent,
-} from '../../_helpers/_traverseChildren';
+} from '../../_internal/_traverseChildren';
 
 /**
  * React.Fragmentを透過し、children内のReactElement、string、numberをcallbackで処理した戻り値を返す
