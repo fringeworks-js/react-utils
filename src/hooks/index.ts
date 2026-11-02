@@ -2,6 +2,7 @@ export * from './useChangeEffect';
 export * from './useChangeLayoutEffect';
 export * from './useCombinedRefs';
 export * from './useConstant';
+export * from './useControllableState';
 export * from './useExecutionAt';
 export * from './useExecutionEffect';
 export * from './useExecutionLayoutEffect';

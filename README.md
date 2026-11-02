@@ -37,6 +37,7 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `useChangeLayoutEffect(dependencies, callback)` | A version of `useChangeEffect` that runs before the browser paints                   |
 | `useCombinedRefs(...refs)`                      | Returns a callback ref that passes the value to all the given refs                   |
 | `useConstant(factory)`                          | Keeps returning the value created on the first render until unmount                  |
+| `useControllableState(options)`                 | Handles a state accepted both controlled (`value`) and uncontrolled (`defaultValue`) |
 | `useExecutionAt()`                              | Returns a value for an Execution Request prop and a function that triggers it        |
 | `useExecutionEffect(request, callback)`         | Runs an operation when it is requested through an Execution Request prop             |
 | `useExecutionLayoutEffect(request, callback)`   | A version of `useExecutionEffect` that runs before the browser paints                |
@@ -149,6 +150,55 @@ useConstant<T>(factory: () => T): T
 Calls `factory` on the first render and keeps returning the created value until the component unmounts.
 
 `useMemo` is a performance optimization and does not guarantee that its cache is never discarded. Use this hook for values whose identity matters, such as stateful instances.
+
+The same value is guaranteed only **after the component commits**. Because `factory` is called during rendering, it may be called more than once before the commit, and the created values may be discarded.
+
+- In StrictMode (development only), rendering runs twice and one of the results is discarded.
+- Values created in a render that is discarded by an interrupted transition or by Suspense are also discarded.
+
+Discarded values are never cleaned up. Do not perform side effects in `factory` (DOM operations, event subscriptions, timers, network requests, and so on). Create instances that involve such side effects in an effect, and destroy them in the effect's cleanup.
+
+### `useControllableState`
+
+```ts
+useControllableState<T, A extends unknown[] = []>(
+  options: UseControllableStateOptions<T, A>,
+): [T, ControllableStateSetter<T, A>]
+```
+
+Handles a state accepted both controlled (`value`) and uncontrolled (`defaultValue`). Returns the current value and a function that changes it.
+
+| Option           | Type                             | Description                                                                                                           |
+| ---------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `value?`         | `T`                              | The controlled value. Controlled when not `undefined`, uncontrolled when `undefined`                                  |
+| `defaultValue?`  | `T`                              | The initial value when uncontrolled. Used only on the first render; later changes are ignored                         |
+| `onValueChange?` | `(value: T, ...rest: A) => void` | Called when the value is changed, even when controlled. Receives the extra arguments passed to the setter as they are |
+
+- Whether the state is controlled is decided on every render. `null` is treated as an empty value and is controlled. If you pass `undefined` until the value is loaded, the hook works uncontrolled until then and becomes controlled when the value arrives.
+- When it goes back from controlled to uncontrolled, it returns the value the hook holds (the initial value, or the value last set while uncontrolled).
+- Calling the setter calls `onValueChange` whether controlled or not. It does nothing when the new value is the same as the current one by `Object.is`. When controlled, the returned value does not change until the parent changes `value`.
+- When controlled, the value compared is the last rendered `value`. Calls in a row in the same event are not compared with the previous call's value.
+- The setter takes only a value (unlike `useState`, it does not accept a function). Its reference never changes.
+- With `defaultValue`, the returned value is `T`; without it, `T | undefined`. Fill the component's default like `defaultValue: props.defaultValue ?? []`.
+
+For a state other than the main value, such as open/closed, rename the props when passing them.
+
+```tsx
+const [value, setValue] = useControllableState({
+  value: props.value,
+  defaultValue: props.defaultValue ?? [],
+  onValueChange: props.onValueChange,
+});
+
+const [open, setOpen] = useControllableState({
+  value: props.open,
+  defaultValue: props.defaultOpen ?? false,
+  onValueChange: props.onOpenChange,
+});
+
+// The second argument is passed to onValueChange as it is
+setValue([...value, item], { type: 'add' });
+```
 
 ### `useExecutionAt`
 
@@ -475,20 +525,22 @@ const items = transformElement(children, (element, index) => (
 
 ### Types
 
-| Type                         | Description                                                                                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AppliedProps<P, Ds>`        | The return type of `applyDefaultProps`                                                                                                                                               |
-| `ChangeDependencies`         | The dependency values passed to an `xxxOn` prop (first-level properties are compared with `Object.is`)                                                                               |
-| `CSSPropertiesWithVars`      | `CSSProperties` that also accepts CSS variables (`--name`)                                                                                                                           |
-| `ExecutionFunction<P>`       | The trigger function returned by `useExecutionAt`                                                                                                                                    |
-| `ExecutionRequest<P>`        | The value for an Execution Request prop returned by `useExecutionAt` (`at`, `payload`)                                                                                               |
-| `ExtendableProps`            | The props of an element that `extendElement` accepts (`className`, `style`)                                                                                                          |
-| `LatestRef<T>`               | The ref returned by `useLatestRef`                                                                                                                                                   |
-| `ExecutionMark`              | An execution mark: an Execution Request without a payload, also the return type of `markAt` and the type of `ExecutionRequest`'s `at` (a number; make it different on every request) |
-| `SkippedDefaults`            | Values skipped by `applyDefaultProps` (`null`, `undefined`, `false`)                                                                                                                 |
-| `UseExecutionAtResult<P>`    | The return type of `useExecutionAt`                                                                                                                                                  |
-| `UseExecutionMarkResult`     | The return type of `useExecutionMark`                                                                                                                                                |
-| `UsePreviousValueOptions<T>` | The options of `usePreviousValue`                                                                                                                                                    |
+| Type                                | Description                                                                                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AppliedProps<P, Ds>`               | The return type of `applyDefaultProps`                                                                                                                                               |
+| `ChangeDependencies`                | The dependency values passed to an `xxxOn` prop (first-level properties are compared with `Object.is`)                                                                               |
+| `ControllableStateSetter<T, A>`     | The function returned by `useControllableState` that changes the value                                                                                                               |
+| `CSSPropertiesWithVars`             | `CSSProperties` that also accepts CSS variables (`--name`)                                                                                                                           |
+| `ExecutionFunction<P>`              | The trigger function returned by `useExecutionAt`                                                                                                                                    |
+| `ExecutionRequest<P>`               | The value for an Execution Request prop returned by `useExecutionAt` (`at`, `payload`)                                                                                               |
+| `ExtendableProps`                   | The props of an element that `extendElement` accepts (`className`, `style`)                                                                                                          |
+| `LatestRef<T>`                      | The ref returned by `useLatestRef`                                                                                                                                                   |
+| `ExecutionMark`                     | An execution mark: an Execution Request without a payload, also the return type of `markAt` and the type of `ExecutionRequest`'s `at` (a number; make it different on every request) |
+| `SkippedDefaults`                   | Values skipped by `applyDefaultProps` (`null`, `undefined`, `false`)                                                                                                                 |
+| `UseControllableStateOptions<T, A>` | The options of `useControllableState`                                                                                                                                                |
+| `UseExecutionAtResult<P>`           | The return type of `useExecutionAt`                                                                                                                                                  |
+| `UseExecutionMarkResult`            | The return type of `useExecutionMark`                                                                                                                                                |
+| `UsePreviousValueOptions<T>`        | The options of `usePreviousValue`                                                                                                                                                    |
 
 ## License
 

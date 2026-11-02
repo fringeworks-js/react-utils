@@ -37,6 +37,7 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `useChangeLayoutEffect(dependencies, callback)` | `useChangeEffect` の、画面に表示する前に実行する版                       |
 | `useCombinedRefs(...refs)`                      | 複数の ref にまとめて値を渡す callback ref を返す                        |
 | `useConstant(factory)`                          | 初回のレンダリングで作った値を、アンマウントされるまで返し続ける         |
+| `useControllableState(options)`                 | 制御（`value`）と非制御（`defaultValue`）の両方で受け付ける状態を扱う    |
 | `useExecutionAt()`                              | Execution Request プロパティに渡す値と、実行のきっかけになる関数を返す   |
 | `useExecutionEffect(request, callback)`         | Execution Request プロパティで要求されたときに、処理を実行する           |
 | `useExecutionLayoutEffect(request, callback)`   | `useExecutionEffect` の、画面に表示する前に実行する版                    |
@@ -149,6 +150,55 @@ useConstant<T>(factory: () => T): T
 初回のレンダリングで `factory` を呼んで作った値を、アンマウントされるまで返し続けます。
 
 `useMemo` はパフォーマンスを最適化するための hook で、キャッシュが破棄されないことは保証されていません。状態を持つインスタンスなど、同じものであることが動作の前提になる値は、この hook で保持します。
+
+同じ値を返し続けることを保証するのは、**コミットした後**だけです。`factory` はレンダリング中に呼ばれるため、コミットする前に複数回呼ばれ、作った値が捨てられることがあります。
+
+- StrictMode（開発時）では、レンダリングが2回行われ、一方の結果は捨てられます。
+- トランジションの中断や Suspense で捨てられたレンダリングで作った値も、捨てられます。
+
+捨てられた値の後片付けは行われません。`factory` では、外部に影響を与える処理（DOM の操作、イベントの登録、タイマー、通信など）をしないでください。そのような処理を伴うインスタンスは、エフェクトの中で作り、エフェクトの後片付けで破棄します。
+
+### `useControllableState`
+
+```ts
+useControllableState<T, A extends unknown[] = []>(
+  options: UseControllableStateOptions<T, A>,
+): [T, ControllableStateSetter<T, A>]
+```
+
+制御（`value`）と非制御（`defaultValue`）の両方で受け付ける状態を扱います。今の値と、値を変える関数を返します。
+
+| オプション       | 型                               | 説明                                                                                          |
+| ---------------- | -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `value?`         | `T`                              | 制御するときの値。`undefined` 以外なら制御、`undefined` なら非制御として扱う                  |
+| `defaultValue?`  | `T`                              | 非制御のときの初期値。最初の描画でだけ使い、後から変わっても反映しない                        |
+| `onValueChange?` | `(value: T, ...rest: A) => void` | 値を変えたときに呼ぶ関数。制御のときも呼ぶ。値を変える関数の2つ目以降の引数をそのまま受け取る |
+
+- 制御かどうかは描画のたびに判定します。`null` は「空の値」として制御に含めます。値を読み込むまで `undefined` を渡しておくと、それまでは非制御で動き、値が来たら制御になります。
+- 制御から非制御に戻ると、hook が持っている値（初期値か、非制御のときに最後に設定した値）に戻ります。
+- 値を変える関数を呼ぶと、制御・非制御にかかわらず `onValueChange` を呼びます。今の値と `Object.is` で同じなら何もしません。制御のときは、親が `value` を変えるまで返す値は変わりません。
+- 制御のときに比べる相手は、最後に描画した `value` です。同じイベントの中で続けて呼んでも、前の呼び出しの値とは比べません。
+- 値を変える関数には値だけを渡します（`useState` のように関数は受け付けません）。参照は常に同じです。
+- `defaultValue` を渡すと戻り値の値は `T`、渡さないと `T | undefined` になります。部品の既定値は `defaultValue: props.defaultValue ?? []` のように補います。
+
+開閉など主な値以外の状態に使うときは、名前を付け替えて渡します。
+
+```tsx
+const [value, setValue] = useControllableState({
+  value: props.value,
+  defaultValue: props.defaultValue ?? [],
+  onValueChange: props.onValueChange,
+});
+
+const [open, setOpen] = useControllableState({
+  value: props.open,
+  defaultValue: props.defaultOpen ?? false,
+  onValueChange: props.onOpenChange,
+});
+
+// 2つ目の引数は、そのまま onValueChange に渡る
+setValue([...value, item], { type: 'add' });
+```
 
 ### `useExecutionAt`
 
@@ -475,20 +525,22 @@ const items = transformElement(children, (element, index) => (
 
 ### 型
 
-| 型                           | 説明                                                                                                                                         |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AppliedProps<P, Ds>`        | `applyDefaultProps` の戻り値の型                                                                                                             |
-| `ChangeDependencies`         | `xxxOn` のプロパティに渡す依存の値（1段目のプロパティを `Object.is` で比べる）                                                               |
-| `CSSPropertiesWithVars`      | CSS 変数（`--name`）を書ける `CSSProperties`                                                                                                 |
-| `ExecutionFunction<P>`       | `useExecutionAt` が返す、実行のきっかけになる関数                                                                                            |
-| `ExecutionRequest<P>`        | `useExecutionAt` が返す、Execution Request プロパティに渡す値（`at`・`payload`）                                                             |
-| `ExtendableProps`            | `extendElement` に渡せるエレメントの props（`className`・`style`）                                                                           |
-| `LatestRef<T>`               | `useLatestRef` が返す参照                                                                                                                    |
-| `ExecutionMark`              | 実行の印。payload の無い Execution Request で、`markAt` の戻り値と `ExecutionRequest` の `at` の型（実体は数値。要求のたびに異なる値にする） |
-| `SkippedDefaults`            | `applyDefaultProps` でスキップされる値（`null`・`undefined`・`false`）                                                                       |
-| `UseExecutionAtResult<P>`    | `useExecutionAt` の戻り値の型                                                                                                                |
-| `UseExecutionMarkResult`     | `useExecutionMark` の戻り値の型                                                                                                              |
-| `UsePreviousValueOptions<T>` | `usePreviousValue` のオプション                                                                                                              |
+| 型                                  | 説明                                                                                                                                         |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AppliedProps<P, Ds>`               | `applyDefaultProps` の戻り値の型                                                                                                             |
+| `ChangeDependencies`                | `xxxOn` のプロパティに渡す依存の値（1段目のプロパティを `Object.is` で比べる）                                                               |
+| `ControllableStateSetter<T, A>`     | `useControllableState` が返す、値を変える関数                                                                                                |
+| `CSSPropertiesWithVars`             | CSS 変数（`--name`）を書ける `CSSProperties`                                                                                                 |
+| `ExecutionFunction<P>`              | `useExecutionAt` が返す、実行のきっかけになる関数                                                                                            |
+| `ExecutionRequest<P>`               | `useExecutionAt` が返す、Execution Request プロパティに渡す値（`at`・`payload`）                                                             |
+| `ExtendableProps`                   | `extendElement` に渡せるエレメントの props（`className`・`style`）                                                                           |
+| `LatestRef<T>`                      | `useLatestRef` が返す参照                                                                                                                    |
+| `ExecutionMark`                     | 実行の印。payload の無い Execution Request で、`markAt` の戻り値と `ExecutionRequest` の `at` の型（実体は数値。要求のたびに異なる値にする） |
+| `SkippedDefaults`                   | `applyDefaultProps` でスキップされる値（`null`・`undefined`・`false`）                                                                       |
+| `UseControllableStateOptions<T, A>` | `useControllableState` のオプション                                                                                                          |
+| `UseExecutionAtResult<P>`           | `useExecutionAt` の戻り値の型                                                                                                                |
+| `UseExecutionMarkResult`            | `useExecutionMark` の戻り値の型                                                                                                              |
+| `UsePreviousValueOptions<T>`        | `usePreviousValue` のオプション                                                                                                              |
 
 ## ライセンス
 
