@@ -5,7 +5,8 @@ import useLatestRef from '../hooks/useLatestRef';
 /**
  * 依存の値が変わったか（1段目のプロパティを `Object.is` で比べる）
  *
- * undefined はプロパティの無いオブジェクトとして扱う
+ * undefined はプロパティの無いオブジェクトとして扱う。
+ * 値が undefined のプロパティは、無いものとして比べる（`{ a: undefined }` と `{}` は同じ）
  */
 const isChanged = (
   prev: ChangeDependencies | undefined,
@@ -16,16 +17,16 @@ const isChanged = (
   }
   const a = (prev ?? {}) as Record<string, unknown>;
   const b = (next ?? {}) as Record<string, unknown>;
-  const keys = Object.keys(a);
-  if (keys.length !== Object.keys(b).length) {
-    return true;
-  }
-  return keys.some(
-    (key) =>
-      !Object.prototype.hasOwnProperty.call(b, key) ||
-      !Object.is(a[key], b[key]),
-  );
+  return hasDifferentValue(a, b) || hasDifferentValue(b, a);
 };
+
+/**
+ * from のプロパティの値に、to の同じキーの値と違うものがあるか（to に無いキーは undefined と比べる）
+ */
+const hasDifferentValue = (
+  from: Record<string, unknown>,
+  to: Record<string, unknown>,
+): boolean => Object.keys(from).some((key) => !Object.is(from[key], to[key]));
 
 /**
  * 依存の値（Change Dependencies）を受け取り、変わっていれば処理を実行する関数を返すフック

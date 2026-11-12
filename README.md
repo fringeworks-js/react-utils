@@ -8,8 +8,6 @@
 
 ```bash
 npm install @fringeworks/react-utils
-# or
-pnpm add @fringeworks/react-utils
 ```
 
 Supports React 18 and 19.
@@ -78,7 +76,7 @@ The receiving hook for `xxxOn` props (such as `refreshOn`). It runs `callback` w
 
 Use it to run operations whose result depends only on their inputs, such as measuring or recalculating again, when the values passed by the user change. For commands where the count or the payload matters, use Execution Requests (`useExecutionAt`, `useExecutionEffect`).
 
-- It compares the first-level properties with `Object.is` and runs when any of them changes. Added or removed properties also count as a change.
+- It compares the first-level properties with `Object.is` and runs when any of them changes. Added or removed properties also count as a change. A property whose value is `undefined` is treated as missing (`{ a: undefined }` and `{}` are the same).
 - Only the first level is compared. Object values are compared by reference, so putting an object created during rendering (such as `{ style }`) counts as a change every time.
 - The dependency object itself may be written inline.
 - It does not run on the first commit (mount).

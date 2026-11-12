@@ -87,10 +87,22 @@ describe.each([
 
     rerender({ dependencies: { a: 1, b: 2 }, callback });
     rerender({ dependencies: { a: 1 }, callback });
-    // 値が undefined でも、キーがあれば別のものとみなす
-    rerender({ dependencies: { a: 1, b: undefined }, callback });
 
-    expect(callback).toHaveBeenCalledTimes(3);
+    expect(callback).toHaveBeenCalledTimes(2);
+  });
+
+  it('値が undefined のプロパティは、無いものとして比べる', () => {
+    const callback = vi.fn();
+    const { rerender } = renderWith({ dependencies: { a: 1 }, callback });
+
+    rerender({ dependencies: { a: 1, b: undefined }, callback });
+    rerender({ dependencies: { a: 1 }, callback });
+    rerender({ dependencies: undefined, callback });
+    rerender({ dependencies: { a: undefined }, callback });
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    rerender({ dependencies: { a: undefined, b: 2 }, callback });
+    expect(callback).toHaveBeenCalledTimes(2);
   });
 
   it('undefined はプロパティの無いオブジェクトとして扱う', () => {
