@@ -1,4 +1,1 @@
-export {
-  default,
-  default as useChangeLayoutEffect,
-} from './useChangeLayoutEffect';
+export { default, default as useChangeLayoutEffect } from './useChangeLayoutEffect';

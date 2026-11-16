@@ -29,24 +29,26 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 
 ### Hooks
 
-| Hook                                            | Description                                                                          |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `useChangeEffect(dependencies, callback)`       | Runs an operation when the dependency values received through an `xxxOn` prop change |
-| `useChangeLayoutEffect(dependencies, callback)` | A version of `useChangeEffect` that runs before the browser paints                   |
-| `useCombinedRefs(...refs)`                      | Returns a callback ref that passes the value to all the given refs                   |
-| `useConstant(factory)`                          | Keeps returning the value created on the first render until unmount                  |
-| `useControllableState(options)`                 | Handles a state accepted both controlled (`value`) and uncontrolled (`defaultValue`) |
-| `useExecutionAt()`                              | Returns a value for an Execution Request prop and a function that triggers it        |
-| `useExecutionEffect(request, callback)`         | Runs an operation when it is requested through an Execution Request prop             |
-| `useExecutionLayoutEffect(request, callback)`   | A version of `useExecutionEffect` that runs before the browser paints                |
-| `useExecutionMark()`                            | Returns an Execution Request without a payload and a function that makes a request   |
-| `useIsHydrated()`                               | Returns whether hydration has finished                                               |
-| `useIsMounted()`                                | Returns a function that tells whether the component is mounted                       |
-| `useLatestRef(value)`                           | Returns a ref that holds the latest value                                            |
-| `usePreviousValue(value, options?)`             | Returns the previous value                                                           |
-| `useRerender()`                                 | Returns a function that only triggers a re-render                                    |
-| `useStableCallback(callback)`                   | Returns a function with a stable reference that calls the latest callback            |
-| `useStableLength(arr)`                          | Ensures that the length of an array does not change across renders                   |
+| Hook                                            | Description                                                                            |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `useAnimatedValue(value, options?)`             | Animates to a new value when the value changes, and returns the value in between       |
+| `useAnimationEffect(value, callback, options?)` | Passes the values in between to a callback without re-rendering when the value changes |
+| `useChangeEffect(dependencies, callback)`       | Runs an operation when the dependency values received through an `xxxOn` prop change   |
+| `useChangeLayoutEffect(dependencies, callback)` | A version of `useChangeEffect` that runs before the browser paints                     |
+| `useCombinedRefs(...refs)`                      | Returns a callback ref that passes the value to all the given refs                     |
+| `useConstant(factory)`                          | Keeps returning the value created on the first render until unmount                    |
+| `useControllableState(options)`                 | Handles a state accepted both controlled (`value`) and uncontrolled (`defaultValue`)   |
+| `useExecutionAt()`                              | Returns a value for an Execution Request prop and a function that triggers it          |
+| `useExecutionEffect(request, callback)`         | Runs an operation when it is requested through an Execution Request prop               |
+| `useExecutionLayoutEffect(request, callback)`   | A version of `useExecutionEffect` that runs before the browser paints                  |
+| `useExecutionMark()`                            | Returns an Execution Request without a payload and a function that makes a request     |
+| `useIsHydrated()`                               | Returns whether hydration has finished                                                 |
+| `useIsMounted()`                                | Returns a function that tells whether the component is mounted                         |
+| `useLatestRef(value)`                           | Returns a ref that holds the latest value                                              |
+| `usePreviousValue(value, options?)`             | Returns the previous value                                                             |
+| `useRerender()`                                 | Returns a function that only triggers a re-render                                      |
+| `useStableCallback(callback)`                   | Returns a function with a stable reference that calls the latest callback              |
+| `useStableLength(arr)`                          | Ensures that the length of an array does not change across renders                     |
 
 ### Functions
 
@@ -62,6 +64,94 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `setRefCurrent(value, ...refs)`                       | Sets a value to multiple refs and returns a cleanup function               |
 | `transformContent(children, callback)`                | Maps elements, strings, and numbers to an array, looking through Fragments |
 | `transformElement(children, callback)`                | Maps elements to an array, looking through Fragments                       |
+
+### `useAnimatedValue`
+
+```ts
+useAnimatedValue(value: number, options?: UseAnimatedValueOptions<number>): number
+useAnimatedValue<T>(value: T, options: UseAnimatedValueOptions<T>): T // interpolate is required
+```
+
+When `value` changes, animates from the displayed value to the new value and returns the value in between. If the value changes during an animation, it heads to the new value from the value at that time. Playback uses `playInterpolator` (`requestAnimationFrame`) from [`@fringeworks/web-utils`](https://www.npmjs.com/package/@fringeworks/web-utils).
+
+Because the value in between is stored in state, it re-renders on every frame while animating. To write the values in between directly to the DOM and avoid re-rendering, use [`useAnimationEffect`](#useanimationeffect).
+
+- On the first render, it returns `value` as is. With `initialValue`, it animates from `initialValue` to `value` on mount (such as a count-up when shown)
+- Numbers are interpolated linearly. For other values, or to change how values are interpolated, pass a function that creates an interpolator from two values to `interpolate`. You can use `interpolate`, `interpolateRgb`, and others from d3-interpolate, or functions from [`@fringeworks/interpolate`](https://www.npmjs.com/package/@fringeworks/interpolate)
+- The returned value has the same type as `value`, so that the next animation can start from the displayed value when the value changes midway. To show a formatted string, format the returned value when you render it
+- `interpolate`, `duration`, and `ease` are read when an animation starts. Changing them does not restart the animation
+- Passing values that never compare equal (objects or arrays created during rendering) re-renders endlessly. Pass values with stable references, or specify `isEqual`
+- During SSR, it returns `value` (or `initialValue` when specified)
+
+```tsx
+import { stepInterpolator } from '@fringeworks/interpolate';
+import { interpolateRgb } from 'd3-interpolate';
+
+const count = useAnimatedValue(total, { duration: 800 });
+<span>{Math.round(count).toLocaleString()}</span>;
+
+// Switch in 5 steps
+const stepped = useAnimatedValue(total, {
+  interpolate: (a, b) => stepInterpolator((t) => a + (b - a) * t, 5),
+});
+
+const color = useAnimatedValue(isError ? 'red' : 'green', {
+  interpolate: interpolateRgb,
+});
+```
+
+| Option          | Type                                    | Description                                                                                                                                              |
+| --------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `interpolate?`  | `(a: T, b: T) => (t: number) => T`      | Creates an interpolator from the displayed value `a` and the new value `b`. Required for non-number values. Defaults to linear interpolation for numbers |
+| `duration?`     | `number`                                | The animation time in milliseconds. Defaults to `250`                                                                                                    |
+| `ease?`         | `(t: number) => number`                 | An easing function applied to the elapsed fraction. Defaults to linear                                                                                   |
+| `initialValue?` | `T`                                     | The value shown on mount. When specified, animates from this value to `value`                                                                            |
+| `isEqual?`      | `(oldValue: T, newValue: T) => boolean` | A comparison function that returns `true` when the values are considered the same. Defaults to `Object.is`                                               |
+
+### `useAnimationEffect`
+
+```ts
+useAnimationEffect(
+  value: number,
+  callback: (value: number) => void,
+  options?: UseAnimationEffectOptions<number>,
+): number
+useAnimationEffect<T>(
+  value: T,
+  callback: (value: T) => void,
+  options: UseAnimationEffectOptions<T>, // interpolate is required
+): T
+```
+
+When `value` changes, animates from the previous value to the new value and passes the value in between to `callback` on every frame. It does not render with the values in between, so use it to update the display without going through React, such as by writing directly to the DOM.
+
+The return value is the value that finished playing. It stays at the previous value while animating, and changes to the new value, with a re-render, only when playback reaches the end.
+
+- On the first render, it returns `value`. With `initialValue`, it animates from `initialValue` to `value` on mount and returns `initialValue` until it finishes
+- If the value changes during an animation, it heads to the new value from the value in between at that time. The return value stays at the value that last finished playing
+- The return value is what the interpolator returned at `t` = 1 (usually the same as `value`)
+- The latest `callback` at the time of each call is used
+- The options and the handling of interpolation, comparison, and SSR are the same as `useAnimatedValue`
+
+```tsx
+function Counter({ value }: { value: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const settled = useAnimationEffect(
+    value,
+    (v) => {
+      ref.current!.firstChild!.nodeValue = Math.round(v).toLocaleString();
+    },
+    { duration: 800 },
+  );
+
+  return <span ref={ref}>{Math.round(settled).toLocaleString()}</span>;
+}
+```
+
+When writing directly to the DOM, avoid conflicts with what React renders.
+
+- Do not assign to `textContent` of an element React renders. It replaces the text node React created, and later renders by React no longer reach the screen. Change the `nodeValue` of the text node, as in the example above; when playback reaches the end, React writes the return value to the same node
+- Do not write `style` properties that React renders. React writes only the differences from the previous props, so a value you wrote directly may remain. Write to properties React does not render, such as CSS variables
 
 ### `useChangeEffect`
 
@@ -535,6 +625,8 @@ const items = transformElement(children, (element, index) => (
 | `LatestRef<T>`                      | The ref returned by `useLatestRef`                                                                                                                                                   |
 | `ExecutionMark`                     | An execution mark: an Execution Request without a payload, also the return type of `markAt` and the type of `ExecutionRequest`'s `at` (a number; make it different on every request) |
 | `SkippedDefaults`                   | Values skipped by `applyDefaultProps` (`null`, `undefined`, `false`)                                                                                                                 |
+| `UseAnimatedValueOptions<T>`        | The options of `useAnimatedValue`                                                                                                                                                    |
+| `UseAnimationEffectOptions<T>`      | The options of `useAnimationEffect`                                                                                                                                                  |
 | `UseControllableStateOptions<T, A>` | The options of `useControllableState`                                                                                                                                                |
 | `UseExecutionAtResult<P>`           | The return type of `useExecutionAt`                                                                                                                                                  |
 | `UseExecutionMarkResult`            | The return type of `useExecutionMark`                                                                                                                                                |

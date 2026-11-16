@@ -31,6 +31,8 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 
 | hook                                            | 説明                                                                     |
 | ----------------------------------------------- | ------------------------------------------------------------------------ |
+| `useAnimatedValue(value, options?)`             | 値が変わったときに、新しい値へアニメーションし、途中の値を返す           |
+| `useAnimationEffect(value, callback, options?)` | 値が変わったときに、途中の値を再レンダリングせずにコールバックに渡す     |
 | `useChangeEffect(dependencies, callback)`       | `xxxOn` のプロパティで受け取った依存の値が変わったときに、処理を実行する |
 | `useChangeLayoutEffect(dependencies, callback)` | `useChangeEffect` の、画面に表示する前に実行する版                       |
 | `useCombinedRefs(...refs)`                      | 複数の ref にまとめて値を渡す callback ref を返す                        |
@@ -62,6 +64,94 @@ import useLatestRef from '@fringeworks/react-utils/hooks/useLatestRef';
 | `setRefCurrent(value, ...refs)`                       | 複数の ref に値を設定し、クリーンアップ関数を返す                  |
 | `transformContent(children, callback)`                | Fragment を透過し、エレメント・文字列・数値を変換した配列を返す    |
 | `transformElement(children, callback)`                | Fragment を透過し、エレメントを変換した配列を返す                  |
+
+### `useAnimatedValue`
+
+```ts
+useAnimatedValue(value: number, options?: UseAnimatedValueOptions<number>): number
+useAnimatedValue<T>(value: T, options: UseAnimatedValueOptions<T>): T // interpolate が必須
+```
+
+`value` が変わったときに、表示している値から新しい値へアニメーションし、途中の値を返します。アニメーションの途中で値が変わった場合は、その時点の値から新しい値へ向かいます。再生には [`@fringeworks/web-utils`](https://www.npmjs.com/package/@fringeworks/web-utils) の `playInterpolator`（`requestAnimationFrame`）を使います。
+
+途中の値をステートに入れるので、アニメーションしている間はフレームごとに再レンダリングします。途中の値は DOM に直接書き、再レンダリングを避けたいときは、[`useAnimationEffect`](#useanimationeffect) を使います。
+
+- 初回は `value` をそのまま返します。`initialValue` を指定すると、マウントしたときに `initialValue` から `value` へアニメーションします（表示したときのカウントアップなど）
+- 数値は線形に補間します。数値以外の値や、補間の仕方を変えたいときは、2つの値から interpolator を作る関数を `interpolate` に渡します。d3-interpolate の `interpolate`・`interpolateRgb` などや、[`@fringeworks/interpolate`](https://www.npmjs.com/package/@fringeworks/interpolate) の関数を使えます
+- 返す値の型は `value` と同じです。途中で値が変わったときに、表示している値から次のアニメーションを始めるためです。書式化した文字列を表示するときは、返された値を表示するときに書式化してください
+- `interpolate`・`duration`・`ease` は、アニメーションを始めるときの値を使います。変えても再生し直しません
+- 比較が毎回 `false` になる値（レンダリング中に作るオブジェクトや配列など）を渡すと、再レンダリングが止まらなくなります。参照が安定した値を渡すか、`isEqual` を指定してください
+- SSR では `value`（`initialValue` を指定した場合は `initialValue`）を返します
+
+```tsx
+import { stepInterpolator } from '@fringeworks/interpolate';
+import { interpolateRgb } from 'd3-interpolate';
+
+const count = useAnimatedValue(total, { duration: 800 });
+<span>{Math.round(count).toLocaleString()}</span>;
+
+// 5段階で飛び飛びに切り替える
+const stepped = useAnimatedValue(total, {
+  interpolate: (a, b) => stepInterpolator((t) => a + (b - a) * t, 5),
+});
+
+const color = useAnimatedValue(isError ? 'red' : 'green', {
+  interpolate: interpolateRgb,
+});
+```
+
+| オプション      | 型                                      | 説明                                                                                                             |
+| --------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `interpolate?`  | `(a: T, b: T) => (t: number) => T`      | 表示している値 `a` と新しい値 `b` から interpolator を作る関数。数値以外の値では必須。数値のデフォルトは線形補間 |
+| `duration?`     | `number`                                | アニメーションの時間（ミリ秒）。デフォルトは `250`                                                               |
+| `ease?`         | `(t: number) => number`                 | 経過時間の割合に適用するイージング関数。デフォルトは線形                                                         |
+| `initialValue?` | `T`                                     | マウントしたときに表示する値。指定すると、この値から `value` へアニメーションする                                |
+| `isEqual?`      | `(oldValue: T, newValue: T) => boolean` | 同じ値とみなす場合に `true` を返す比較関数。未指定の場合は `Object.is`                                           |
+
+### `useAnimationEffect`
+
+```ts
+useAnimationEffect(
+  value: number,
+  callback: (value: number) => void,
+  options?: UseAnimationEffectOptions<number>,
+): number
+useAnimationEffect<T>(
+  value: T,
+  callback: (value: T) => void,
+  options: UseAnimationEffectOptions<T>, // interpolate が必須
+): T
+```
+
+`value` が変わったときに、前の値から新しい値へアニメーションし、途中の値をフレームごとに `callback` に渡します。途中の値ではレンダリングしないので、DOM に直接書くなど、React を通さずに表示を変えるときに使います。
+
+戻り値は、最後まで再生し終えた値です。アニメーションしている間は前の値のままで、最後まで再生したときにだけ新しい値に変わり、再レンダリングします。
+
+- 初回は `value` を返します。`initialValue` を指定すると、マウントしたときに `initialValue` から `value` へアニメーションし、終わるまで `initialValue` を返します
+- アニメーションの途中で値が変わった場合は、その時点の途中の値から新しい値へ向かいます。戻り値は、最後に再生し終えた値のままです
+- 戻り値は、interpolator が `t` = 1 で返した値です（ふつうは `value` と同じです）
+- `callback` は、呼ぶときの最新のものを使います
+- オプションと、補間・比較・SSR の扱いは `useAnimatedValue` と同じです
+
+```tsx
+function Counter({ value }: { value: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const settled = useAnimationEffect(
+    value,
+    (v) => {
+      ref.current!.firstChild!.nodeValue = Math.round(v).toLocaleString();
+    },
+    { duration: 800 },
+  );
+
+  return <span ref={ref}>{Math.round(settled).toLocaleString()}</span>;
+}
+```
+
+DOM に直接書くときは、React が描いているものとぶつからないようにしてください。
+
+- React が描いている要素の `textContent` に代入しないでください。React が作ったテキストのノードが置き換わり、React が値を描き直しても画面に反映されなくなります。上の例のように、テキストのノードの `nodeValue` を書き換えると、最後まで再生したときに React が同じノードへ戻り値を書きます
+- React が `style` で描いているプロパティを直接書かないでください。React は前回の props との差分だけを書くので、直接書いた値が残ることがあります。CSS 変数など、React が描いていないプロパティに書いてください
 
 ### `useChangeEffect`
 
@@ -535,6 +625,8 @@ const items = transformElement(children, (element, index) => (
 | `LatestRef<T>`                      | `useLatestRef` が返す参照                                                                                                                    |
 | `ExecutionMark`                     | 実行の印。payload の無い Execution Request で、`markAt` の戻り値と `ExecutionRequest` の `at` の型（実体は数値。要求のたびに異なる値にする） |
 | `SkippedDefaults`                   | `applyDefaultProps` でスキップされる値（`null`・`undefined`・`false`）                                                                       |
+| `UseAnimatedValueOptions<T>`        | `useAnimatedValue` のオプション                                                                                                              |
+| `UseAnimationEffectOptions<T>`      | `useAnimationEffect` のオプション                                                                                                            |
 | `UseControllableStateOptions<T, A>` | `useControllableState` のオプション                                                                                                          |
 | `UseExecutionAtResult<P>`           | `useExecutionAt` の戻り値の型                                                                                                                |
 | `UseExecutionMarkResult`            | `useExecutionMark` の戻り値の型                                                                                                              |

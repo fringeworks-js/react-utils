@@ -1,5 +1,2 @@
 export type * from './types';
-export {
-  default,
-  default as useControllableState,
-} from './useControllableState';
+export { default, default as useControllableState } from './useControllableState';

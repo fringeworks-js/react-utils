@@ -1,3 +1,5 @@
+export * from './useAnimatedValue';
+export * from './useAnimationEffect';
 export * from './useChangeEffect';
 export * from './useChangeLayoutEffect';
 export * from './useCombinedRefs';

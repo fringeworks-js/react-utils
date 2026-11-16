@@ -1,4 +1,1 @@
-export {
-  default,
-  default as useExecutionLayoutEffect,
-} from './useExecutionLayoutEffect';
+export { default, default as useExecutionLayoutEffect } from './useExecutionLayoutEffect';
